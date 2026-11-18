@@ -131,6 +131,18 @@ const env = {
     maxResumeBytes: Number(process.env.MAX_RESUME_BYTES) || 5 * 1024 * 1024,
   },
 
+  // Redis (queue + shared rate limits). Optional: without it jobs run inline.
+  redisUrl: process.env.REDIS_URL || '',
+
+  // AI
+  ai: {
+    enabled: process.env.FEATURE_AI !== 'false',
+    defaultProvider: (process.env.AI_DEFAULT_PROVIDER || '').toLowerCase(),
+    embeddingModel: process.env.AI_EMBEDDING_MODEL || 'text-embedding-3-small',
+    monthlyCredits: Number(process.env.AI_DEFAULT_MONTHLY_CREDITS) || 500,
+    ratePerMinute: Number(process.env.AI_RATE_PER_MINUTE) || 60,
+  },
+
   // Shared secret for POST /api/internal/tick (worker / scheduler)
   cronSecret: process.env.CRON_SECRET || '',
 

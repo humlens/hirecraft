@@ -414,37 +414,40 @@ enum ResumeParseStatus {
 }
 
 model Job {
-  id                  String                   @id @default(uuid())
+  id                  String                       @id @default(uuid())
   teamId              String
   title               String
   slug                String
-  descriptionHtml     String                   @default("") @db.Text
-  responsibilities    String[]                 @default([])
-  status              JobStatus                @default(DRAFT)
+  descriptionHtml     String                       @default("") @db.Text
+  responsibilities    String[]                     @default([])
+  status              JobStatus                    @default(DRAFT)
   publishAt           DateTime?
   publishedAt         DateTime?
   closesAt            DateTime?
-  visibility          JobVisibility            @default(PUBLIC)
-  employmentType      EmploymentType           @default(FULL_TIME)
-  workMode            WorkMode                 @default(ONSITE)
+  visibility          JobVisibility                @default(PUBLIC)
+  employmentType      EmploymentType               @default(FULL_TIME)
+  workMode            WorkMode                     @default(ONSITE)
   experienceMin       Int?
   experienceMax       Int?
   salaryMin           Int?
   salaryMax           Int?
-  salaryCurrency      String                   @default("INR")
-  salaryVisible       Boolean                  @default(false)
+  salaryCurrency      String                       @default("INR")
+  salaryVisible       Boolean                      @default(false)
   department          String?
   industry            String?
   education           String?
-  vacancies           Int                      @default(1)
-  benefits            String[]                 @default([])
-  companyInfoOverride String?                  @db.Text
+  vacancies           Int                          @default(1)
+  benefits            String[]                     @default([])
+  companyInfoOverride String?                      @db.Text
   createdById         String?
   deletedAt           DateTime?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
   // Generated column (see migration): full-text search over title/description
   search              Unsupported("tsvector")?
+  // pgvector embedding (1536 dims) of the job text, maintained by the AI worker
+  embedding           Unsupported("vector(1536)")?
+  embeddedAt          DateTime?
 
   team         Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
   skills       JobSkill[]
@@ -519,22 +522,27 @@ model ScreeningQuestion {
 }
 
 model CandidateProfile {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
+  id                 String                       @id @default(uuid())
+  userId             String                       @unique
   headline           String?
-  summary            String?  @db.Text
+  summary            String?                      @db.Text
   phone              String?
   location           String?
-  preferredLocations String[] @default([])
+  preferredLocations String[]                     @default([])
   expectedSalary     Int?
   noticePeriodDays   Int?
   employmentStatus   String?
   linkedinUrl        String?
   githubUrl          String?
   portfolioUrl       String?
-  completeness       Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  completeness       Int                          @default(0)
+  // Generated tsvector over headline/summary/location (see migration) and a
+  // pgvector embedding of the anonymised profile text (no name / contact data)
+  search             Unsupported("tsvector")?
+  embedding          Unsupported("vector(1536)")?
+  embeddedAt         DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   skills         CandidateSkill[]
@@ -612,6 +620,7 @@ model CandidateResume {
 
   profile      CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   applications JobApplication[]
+  parsedFields ParsedField[]
 
   @@index([profileId, deletedAt])
 }
@@ -703,6 +712,7 @@ model JobApplication {
   interviews      Interview[]
   offers          Offer[]
   messageDrafts   MessageDraft[]
+  assessments     MatchAssessment[]
 
   @@unique([jobId, tenantCandidateId])
   @@index([teamId, jobId, stageId])
@@ -1025,4 +1035,118 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: AI
+// ---------------------------------------------------------------------------
+
+enum AIProvider {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  OPENAI_COMPATIBLE
+}
+
+// teamId = null is the platform default (managed by the platform admin).
+model AIProviderConfig {
+  id               String     @id @default(uuid())
+  teamId           String?
+  provider         AIProvider
+  baseUrl          String?
+  // AES-256-GCM (see lib/ai/crypto.ts). Never returned to a browser.
+  encryptedApiKey  String?    @db.Text
+  keyHint          String?
+  modelByTier      Json       @default("{}")
+  embeddingModel   String?
+  enabledFeatures  Json       @default("{}")
+  logRetentionDays Int        @default(30)
+  monthlyCredits   Int?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@unique([teamId])
+}
+
+model PromptTemplate {
+  id        String   @id @default(uuid())
+  key       String
+  version   Int
+  system    String?  @db.Text
+  body      String   @db.Text
+  schema    Json?
+  active    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([key, version])
+}
+
+model AIUsage {
+  id            String   @id @default(uuid())
+  teamId        String?
+  userId        String?
+  feature       String
+  provider      String
+  model         String
+  promptKey     String
+  promptVersion Int
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  credits       Int      @default(0)
+  latencyMs     Int      @default(0)
+  status        String
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@index([teamId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Redacted input/output of AI calls; deleted after the tenant's retention period.
+model AIRequestLog {
+  id        String   @id @default(uuid())
+  teamId    String?
+  usageId   String?
+  feature   String
+  input     String   @db.Text
+  output    String?  @db.Text
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([teamId, createdAt])
+}
+
+model ParsedField {
+  id          String    @id @default(uuid())
+  resumeId    String
+  field       String
+  value       Json
+  confidence  Float
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  resume CandidateResume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId])
+}
+
+model MatchAssessment {
+  id                 String   @id @default(uuid())
+  teamId             String
+  applicationId      String
+  score              Int
+  breakdown          Json
+  matchedSkills      String[]
+  missingSkills      String[]
+  explanation        String   @db.Text
+  evidence           Json
+  suggestedQuestions String[]
+  promptVersion      Int
+  model              String
+  createdAt          DateTime @default(now())
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, applicationId, createdAt])
 }

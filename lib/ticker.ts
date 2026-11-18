@@ -9,6 +9,7 @@ export type TickResult = {
   jobsClosed: number;
   remindersSent: number;
   offersExpired: number;
+  aiLogsDeleted: number;
 };
 
 const slugCache = new Map<string, string>();
@@ -35,7 +36,7 @@ async function teamSlug(teamId: string) {
  *
  * It scans across portals with the unguarded client, then does every write
  * through the tenant-guarded client with an explicit teamId.
- * Driven by `worker/index.js` or any scheduler calling POST /api/internal/tick.
+ * Driven by `worker/index.ts` or any scheduler calling POST /api/internal/tick.
  */
 export async function runDueTasks(now = new Date()): Promise<TickResult> {
   const result: TickResult = {
@@ -43,6 +44,7 @@ export async function runDueTasks(now = new Date()): Promise<TickResult> {
     jobsClosed: 0,
     remindersSent: 0,
     offersExpired: 0,
+    aiLogsDeleted: 0,
   };
 
   // 1. scheduled jobs go live (claimed with a conditional update: no double publish)
@@ -205,6 +207,13 @@ export async function runDueTasks(now = new Date()): Promise<TickResult> {
       }
     }
   }
+
+  // 5. AI request logs are kept only for the portal's retention period
+  const purged = await unguardedPrisma.aIRequestLog.deleteMany({
+    where: { expiresAt: { lte: now } },
+  });
+
+  result.aiLogsDeleted = purged.count;
 
   return result;
 }

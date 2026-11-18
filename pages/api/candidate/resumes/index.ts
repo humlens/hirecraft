@@ -15,6 +15,7 @@ import {
   requireUser,
 } from '@/lib/candidateAuth';
 import { prisma } from '@/lib/prisma';
+import { enqueue } from '@/lib/queue';
 import { ensureProfile, listResumes, MAX_RESUMES } from 'models/candidate';
 
 // The body is the raw file: we read the stream ourselves to enforce a size cap.
@@ -112,6 +113,9 @@ const handlePOST = async (
       createdAt: true,
     },
   });
+
+  // Read the resume in the background (AI), if AI is configured
+  await enqueue('resume.parse', { resumeId: resume.id });
 
   res.status(201).json({ data: resume });
 };

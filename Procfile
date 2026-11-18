@@ -1,1 +1,2 @@
-web: ./node_modules/.bin/next startworker: node worker/index.js
+web: ./node_modules/.bin/next start
+worker: ./node_modules/.bin/tsx worker/index.ts

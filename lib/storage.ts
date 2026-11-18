@@ -112,6 +112,22 @@ export async function deleteObject(key: string) {
   await fs.rm(`${localPath(key)}.meta`, { force: true });
 }
 
+/** Reads an object (server side only, e.g. the resume parser). */
+export async function getObjectBuffer(key: string): Promise<Buffer> {
+  assertValidKey(key);
+
+  if (s3Enabled()) {
+    const res = await getS3().send(
+      new GetObjectCommand({ Bucket: env.storage.s3.bucket, Key: key })
+    );
+    const bytes = await res.Body?.transformToByteArray();
+
+    return Buffer.from(bytes ?? []);
+  }
+
+  return fs.readFile(localPath(key));
+}
+
 /** Short-lived download URL. Local driver URLs are HMAC-signed. */
 export async function getSignedUrl(
   key: string,

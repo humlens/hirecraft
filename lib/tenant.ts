@@ -109,3 +109,43 @@ export async function requireTenantContext(
 
   return ctx;
 }
+
+/**
+ * Builds a tenant context outside an HTTP request (background jobs), for a
+ * user whose permission was already checked when the job was queued. Membership
+ * and suspension are re-checked here.
+ */
+export async function buildTenantContext(
+  teamId: string,
+  userId: string
+): Promise<TenantContext> {
+  const member = await prisma.teamMember.findFirst({
+    where: { teamId, userId },
+    include: {
+      team: true,
+      user: { select: { id: true, name: true, email: true, image: true } },
+      portalRole: {
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          permissions: { select: { permission: { select: { key: true } } } },
+        },
+      },
+    },
+  });
+
+  if (!member || member.team.status === 'SUSPENDED') {
+    throw new ApiError(403, 'You do not have access to this team.');
+  }
+
+  const { team, user, ...memberRow } = member;
+
+  return {
+    user,
+    team,
+    member: memberRow,
+    permissions: getEffectivePermissions(memberRow),
+    scope: getDataScope(memberRow),
+  };
+}

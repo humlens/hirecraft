@@ -210,6 +210,10 @@ export async function applyToJob(args: {
             purpose: 'TALENT_POOL' as const,
             granted: input.consent.talentPool,
           },
+          // recorded only when given (declining = no row)
+          ...(input.consent.aiRecommendations
+            ? [{ purpose: 'AI_RECOMMENDATIONS' as const, granted: true }]
+            : []),
         ].map((c) => ({
           userId: user.id,
           teamId,

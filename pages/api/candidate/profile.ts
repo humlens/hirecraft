@@ -6,6 +6,7 @@ import {
 } from '@/lib/candidateAuth';
 import { candidateProfileSchema, validateWithSchema } from '@/lib/zod';
 import { findProfile, updateProfile } from 'models/candidate';
+import { enqueue } from '@/lib/queue';
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,7 +22,11 @@ export default async function handler(
       case 'PUT': {
         const input = validateWithSchema(candidateProfileSchema, req.body);
 
-        res.status(200).json({ data: await updateProfile(user.id, input) });
+        const profile = await updateProfile(user.id, input);
+
+        await enqueue('embed.profile', { userId: user.id });
+
+        res.status(200).json({ data: profile });
         break;
       }
       default:

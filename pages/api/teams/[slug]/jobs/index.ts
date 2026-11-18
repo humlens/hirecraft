@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { requireTenantContext } from '@/lib/tenant';
 import { createJobSchema, listJobsSchema, validateWithSchema } from '@/lib/zod';
 import { createJob, listJobs } from 'models/job';
+import { enqueue } from '@/lib/queue';
 import { sendAudit } from '@/lib/retraced';
 import { recordMetric } from '@/lib/metrics';
 
@@ -61,6 +62,8 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
     user: ctx.user as never,
     team: ctx.team,
   });
+
+  await enqueue('embed.job', { teamId: ctx.team.id, jobId: job.id });
 
   recordMetric('job.created');
 

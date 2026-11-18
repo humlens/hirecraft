@@ -430,6 +430,7 @@ export const applySchema = z.object({
       }),
     }),
     talentPool: z.boolean().default(false),
+    aiRecommendations: z.boolean().default(false),
   }),
 });
 

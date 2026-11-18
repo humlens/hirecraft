@@ -3267,6 +3267,7 @@ suite('phase 3 (integration)', () => {
       const ok = await post({ authorization: 'Bearer test-cron-secret' });
       expect(ok.status).toBe(200);
       expect(Object.keys(ok.json.data).sort()).toEqual([
+        'aiLogsDeleted',
         'jobsClosed',
         'jobsPublished',
         'offersExpired',

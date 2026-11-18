@@ -5,6 +5,8 @@ const { withSentryConfig } = require('@sentry/nextjs');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // pdf.js loads its worker dynamically: keep these out of the server bundle
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'mammoth'],
   images: {
     remotePatterns: [
       {

@@ -50,7 +50,10 @@ type EventType =
   | 'message.send'
   | 'message.discard'
   | 'pipeline.update'
-  | 'automation.update';
+  | 'automation.update'
+  | 'ai.use'
+  | 'ai.settings.update'
+  | 'ai.match';
 
 type Request = {
   action: EventType;

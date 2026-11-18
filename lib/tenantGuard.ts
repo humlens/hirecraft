@@ -32,6 +32,11 @@ export const TENANT_MODELS = new Set<string>([
   'OfferApproval',
   'MessageDraft',
   'AutomationRule',
+  'MatchAssessment',
+  // teamId may be null (platform level) but must always be stated
+  'AIUsage',
+  'AIRequestLog',
+  'AIProviderConfig',
 ]);
 
 /** Rows that may be created but never changed or removed by the app. */
