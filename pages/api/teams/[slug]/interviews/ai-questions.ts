@@ -23,10 +23,8 @@ export default route({
       req.body
     );
 
-    res
-      .status(200)
-      .json({
-        data: await suggestInterviewQuestions(ctx, applicationId, competencies),
-      });
+    res.status(200).json({
+      data: await suggestInterviewQuestions(ctx, applicationId, competencies),
+    });
   },
 });

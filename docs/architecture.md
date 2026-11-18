@@ -453,3 +453,22 @@ a failing rule is recorded and never breaks the operation that triggered it.
   applications currently in a `HIRED` stage.
 - Notification emails reach staff; SMTP must be configured for any email to go out.
 - SSO/SCIM, billing and API-key screens are unchanged; custom roles are still not plan-gated.
+
+# Phase 4: AI
+
+See [ai.md](./ai.md) for the pipeline, governance and fairness rules.
+
+## 24. Modules added
+
+`lib/ai/*` (providers, crypto, prompts, run pipeline, embeddings), `lib/queue.ts`,
+`lib/jobHandlers.ts`, `lib/redis.ts`, `models/ai/*` (resume parsing, matching, search,
+recommendations, copilot, interview assistant, comms, settings), and UI in
+`components/ai/*` plus candidate-side `ParsedReview`, `AiConsent`, `Recommendations`.
+
+## 25. Deviations and assumptions (Phase 4)
+
+- Redis is optional: without `REDIS_URL` jobs run inline and the rate limit is per process.
+- Structured output uses a JSON schema in the prompt plus zod validation, not each
+  vendor's native structured-output mode, so all providers behave the same.
+- Credits are charged only when the platform key is used.
+- Embeddings are 1536-dimensional; models returning another size are rejected.

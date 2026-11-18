@@ -25,11 +25,11 @@ const sentences = (text: string) =>
 const PROTECTED_PATTERNS: RegExp[] = [
   // age / date of birth
   /\b(\d{1,2})\s*(?:years?|yrs?)[\s-]*old\b/i,
-  /\bage\s*[:\-]?\s*\d{2}\b/i,
+  /\bage\s*[:-]?\s*\d{2}\b/i,
   /\baged\s+\d{2}\b/i,
   /\b(?:dob|date of birth|born (?:on|in)|birth ?date)\b/i,
   // gender / sex
-  /\b(?:gender|sex)\s*[:\-]/i,
+  /\b(?:gender|sex)\s*[:-]/i,
   /\b(?:male|female|non-binary|transgender|man|woman|boy|girl|lady|gentleman)\b/i,
   // marital status / family
   /\b(?:married|unmarried|divorced|widowed|marital|spouse|wife|husband|pregnan\w*|maternity|paternity)\b/i,

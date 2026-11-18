@@ -1,3 +1,4 @@
+import TalentSearch from '@/components/ai/TalentSearch';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -124,6 +125,10 @@ const TalentList = ({ slug }: { slug: string }) => {
           </button>
         )}
       </div>
+
+      {can('candidates.search') && (
+        <TalentSearch slug={slug} canAI={can('ai.use')} />
+      )}
 
       <div className="flex flex-wrap gap-2">
         <input

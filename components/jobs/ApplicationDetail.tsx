@@ -15,6 +15,7 @@ import {
 import { CreateOffer, type OfferView } from '@/components/offers/Offers';
 import { ComposeMessage, MessagesList } from '@/components/messages/Messages';
 import { useRouter } from 'next/router';
+import MatchPanel from '@/components/ai/MatchPanel';
 
 type Answer = { questionId: string; prompt: string; value: unknown };
 
@@ -261,6 +262,10 @@ const ApplicationDetail = ({
           )}
         </Card.Body>
       </Card>
+
+      {can('ai.use') && (
+        <MatchPanel slug={slug} applicationId={applicationId} />
+      )}
 
       {can('messages.send') && (
         <MessagesList slug={slug} applicationId={applicationId} />

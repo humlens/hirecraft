@@ -203,3 +203,23 @@ erDiagram
     boolean requiresApproval
   }
 ```
+
+## Phase 4: AI
+
+```mermaid
+erDiagram
+  Team ||--o| AIProviderConfig : configures
+  Team ||--o{ AIUsage : records
+  Team ||--o{ AIRequestLog : keeps
+  Team ||--o{ MatchAssessment : owns
+  JobApplication ||--o{ MatchAssessment : has
+  CandidateResume ||--o{ ParsedField : extracted
+  PromptTemplate {
+    string key
+    int version
+    bool active
+  }
+```
+
+`CandidateProfile` and `Job` gain `embedding vector(1536)` and `embeddedAt`;
+`CandidateProfile` also has a generated `search tsvector`.

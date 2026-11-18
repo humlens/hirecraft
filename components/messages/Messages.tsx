@@ -2,6 +2,7 @@ import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
+import usePortalAccess from 'hooks/usePortalAccess';
 import toast from 'react-hot-toast';
 
 export type MessageView = {
@@ -142,6 +143,8 @@ export const MessagesList = ({
 }) => {
   const { t } = useTranslation('common');
   const [status, setStatus] = useState('');
+  const { can } = usePortalAccess(slug);
+  const [drafting, setDrafting] = useState(false);
   const params = new URLSearchParams();
 
   if (status) params.set('status', status);
@@ -154,8 +157,39 @@ export const MessagesList = ({
   if (isLoading) return <Loading />;
   if (isError) return <Error message={isError.message} />;
 
+  const aiDraft = async () => {
+    setDrafting(true);
+
+    const r = await send(`/api/teams/${slug}/applications/ai-draft`, 'POST', {
+      applicationId,
+      kind: 'STATUS_UPDATE',
+    });
+
+    setDrafting(false);
+
+    if (!r.ok) {
+      toast.error(r.error as string);
+      return;
+    }
+
+    toast.success(
+      t('ai-draft-ready', 'Draft created. Review it before sending.')
+    );
+    refresh();
+  };
+
   return (
     <div className="space-y-4">
+      {applicationId && can('ai.use') && can('messages.send') && (
+        <button
+          type="button"
+          className="btn btn-sm"
+          disabled={drafting}
+          onClick={aiDraft}
+        >
+          {t('ai-draft-message', 'Draft with AI')}
+        </button>
+      )}
       {!applicationId && (
         <div className="flex items-center gap-3">
           <h2 className="mr-auto text-xl font-medium">

@@ -40,11 +40,21 @@ if (redis) {
   );
   worker.on('completed', (job) => console.log('done', job.name, job.id));
   worker.on('failed', (job, err) =>
-    console.error('failed', job?.name, job?.id, `attempt ${job?.attemptsMade}`, err.message)
+    console.error(
+      'failed',
+      job?.name,
+      job?.id,
+      `attempt ${job?.attemptsMade}`,
+      err.message
+    )
   );
-  console.log(`BullMQ worker listening on "${QUEUE_NAME}" (concurrency ${concurrency})`);
+  console.log(
+    `BullMQ worker listening on "${QUEUE_NAME}" (concurrency ${concurrency})`
+  );
 } else {
-  console.warn('REDIS_URL is not set: AI jobs run inline in the web app; this worker only runs the tick.');
+  console.warn(
+    'REDIS_URL is not set: AI jobs run inline in the web app; this worker only runs the tick.'
+  );
 }
 
 void tick();

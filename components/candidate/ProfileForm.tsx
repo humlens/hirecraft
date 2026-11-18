@@ -1,3 +1,4 @@
+import ParsedReview from '@/components/candidate/ParsedReview';
 import { Error, Loading } from '@/components/shared';
 import { defaultHeaders } from '@/lib/common';
 import { useMyProfile, useMyResumes } from 'hooks/useCandidate';
@@ -186,7 +187,7 @@ const ProfileForm = () => {
         <h2 className="text-lg font-semibold">{t('resumes', 'Resumes')}</h2>
         <ul className="space-y-1 text-sm">
           {(resumes ?? []).map((r) => (
-            <li key={r.id} className="flex items-center gap-3">
+            <li key={r.id} className="flex flex-wrap items-center gap-3">
               <span>{r.fileName}</span>
               <button
                 type="button"
@@ -195,6 +196,9 @@ const ProfileForm = () => {
               >
                 {t('remove')}
               </button>
+              <div className="basis-full">
+                <ParsedReview resumeId={r.id} onChanged={refresh} />
+              </div>
             </li>
           ))}
         </ul>

@@ -78,3 +78,10 @@ Interview reminders (24 h / 1 h), scheduled job publishing, closing dates and of
   (evaluated on read) but reminders and notifications for time-based events are not sent.
 - **Email:** set `SMTP_*`. Without SMTP, approving a message works but sending is refused
   (503) so nothing is silently dropped.
+
+## AI and the queue (Phase 4)
+
+- Use a PostgreSQL with the `vector` extension (the migration runs `CREATE EXTENSION IF NOT EXISTS vector`).
+- Set at least one provider key, or portals must bring their own.
+- Set `REDIS_URL` and run `npm run worker` to process resume parsing and embeddings off the web process.
+- Keep `AI_KEYS_ENCRYPTION_SECRET` stable: rotating it invalidates saved portal keys.

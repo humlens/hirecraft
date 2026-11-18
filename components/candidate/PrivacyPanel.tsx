@@ -3,6 +3,7 @@ import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
+import AiConsent from './AiConsent';
 
 const PrivacyPanel = () => {
   const { t } = useTranslation('common');
@@ -54,6 +55,7 @@ const PrivacyPanel = () => {
 
   return (
     <div className="space-y-8">
+      <AiConsent />
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">
           {t('export-my-data', 'Export my data')}

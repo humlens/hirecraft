@@ -61,7 +61,7 @@ export class FakeProvider implements AIProvider {
       return this.handler(call);
     }
 
-    return {};
+    return cannedReply(call);
   }
 
   async generateText(o: GenerateOptions): Promise<TextResult> {
@@ -142,6 +142,98 @@ export class FakeProvider implements AIProvider {
       usage: { inputTokens: o.texts.join(' ').length / 4, outputTokens: 0 },
     };
   }
+}
+
+/**
+ * Plausible answers for local development and browser tests (no handler set):
+ * each feature gets a small valid reply derived from its prompt.
+ */
+function cannedReply(call: FakeCall): unknown {
+  const sys = call.system ?? '';
+  const skills = (call.prompt.match(/Skills?:\s*(.+)/i)?.[1] ?? '')
+    .split(/[,;]/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+
+  if (sys.includes('recruiting copilot')) {
+    return { type: 'final', answer: 'Here is what I found in your records.' };
+  }
+
+  if (sys.includes('natural-language talent search')) {
+    return {
+      skills: [],
+      keywords: call.prompt
+        .replace(/[<>/a-z]*data>/gi, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 3)
+        .slice(0, 4),
+      location: null,
+      minYears: null,
+      maxYears: null,
+      workMode: null,
+    };
+  }
+
+  if (sys.includes('write clear, inclusive')) {
+    return {
+      overview: 'Join our team and help us build great products.',
+      responsibilities: [
+        'Design and ship features',
+        'Collaborate with the team',
+      ],
+      requirements: ['Relevant experience', 'Clear communication'],
+      niceToHave: [],
+      benefits: [],
+    };
+  }
+
+  if (sys.includes('assess how well an anonymised candidate')) {
+    return {
+      technicalDepth: { score: 70, rationale: 'Relevant experience shown.' },
+      evidence: [],
+      explanation: 'Reasonable fit based on the listed skills.',
+      suggestedQuestions: ['Tell us about a project you are proud of.'],
+    };
+  }
+
+  if (sys.includes('structured interview questions')) {
+    return {
+      competencies: [
+        {
+          name: 'Technical skills',
+          questions: [
+            {
+              question: 'Walk us through a hard problem you solved.',
+              whatToLookFor: 'Clear reasoning',
+            },
+          ],
+        },
+      ],
+      evaluationTemplate: [],
+    };
+  }
+
+  if (sys.includes('draft short, polite')) {
+    return {
+      subject: 'An update on your application',
+      body: 'Hi {candidate_name},\n\nThank you for your patience. We will be in touch soon.',
+    };
+  }
+
+  if (sys.includes('summarise interviewers')) {
+    return {
+      summary: 'Feedback summary.',
+      strengths: [],
+      concerns: [],
+      consensus: 'See individual scorecards.',
+    };
+  }
+
+  // resume parsing
+  return {
+    skills: skills.map((value) => ({ value, confidence: 0.9 })),
+  };
 }
 
 /** Hashed bag-of-words embedding, L2-normalised. */

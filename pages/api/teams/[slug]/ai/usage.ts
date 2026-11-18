@@ -9,13 +9,11 @@ export default route({
     });
     const withLog = req.query.log === '1';
 
-    res
-      .status(200)
-      .json({
-        data: {
-          usage: await getUsage(ctx),
-          ...(withLog ? { log: await getRequestLog(ctx) } : {}),
-        },
-      });
+    res.status(200).json({
+      data: {
+        usage: await getUsage(ctx),
+        ...(withLog ? { log: await getRequestLog(ctx) } : {}),
+      },
+    });
   },
 });

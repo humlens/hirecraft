@@ -1,3 +1,4 @@
+import InterviewAssist from '@/components/ai/InterviewAssist';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -222,6 +223,16 @@ export const InterviewDetail = ({
             </button>
           </section>
         )}
+
+      {can('ai.use') && can('interviews.manage') && (
+        <InterviewAssist
+          slug={slug}
+          interviewId={interviewId}
+          applicationId={data.applicationId}
+          canQuestions={can('interviews.manage')}
+          canSummary={can('interviews.manage')}
+        />
+      )}
 
       <section className="space-y-2">
         <h3 className="font-semibold">{t('feedback', 'Feedback')}</h3>

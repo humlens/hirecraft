@@ -3,6 +3,7 @@ import useApi from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import { ApplicationList } from './Applications';
+import Recommendations from './Recommendations';
 
 const Dashboard = () => {
   const { t } = useTranslation('common');
@@ -22,6 +23,8 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      <Recommendations />
+
       <section className="rounded border p-4">
         <h2 className="font-semibold">
           {t('profile-completeness', 'Profile completeness')}

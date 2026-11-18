@@ -159,3 +159,16 @@ approve offers, export, or see analytics; **HR Manager** runs the whole ATS (tal
 messages, analytics, pipeline settings); **Hiring Manager** approves offers they are asked to
 approve and gives interview feedback; **Interviewer** only sees their interviews and submits
 scorecards; **Viewer** can read analytics but not export.
+
+## Phase 4 endpoints
+
+| Endpoint                                                                                    | Permission                                                      |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `POST jobs/ai-description`                                                                  | `ai.use` + `jobs.create` or `jobs.update`                       |
+| `GET/POST applications/:id/match`, `POST jobs/:id/match-all`                                | `applications.read` + `ai.use`, within job scope                |
+| `POST talent/search`                                                                        | `candidates.search` (+ `ai.use` for the natural-language parse) |
+| `POST applications/ai-draft`                                                                | `messages.send` + `ai.use`, within scope                        |
+| `POST interviews/ai-questions`, `interviews/:id/ai-summary`                                 | `interviews.manage` + `ai.use`                                  |
+| `POST copilot`                                                                              | `ai.use`; each tool re-checks its own permission and scope      |
+| `GET/PUT ai/settings`, `GET ai/usage`, `POST ai/test`                                       | `ai.configure`                                                  |
+| `GET/PUT candidate/resumes/:id/parsed`, `candidate/recommendations`, `candidate/ai-consent` | signed-in candidate, own data only                              |

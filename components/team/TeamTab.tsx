@@ -15,6 +15,8 @@ import {
   EnvelopeIcon,
   ChartBarIcon,
   AdjustmentsHorizontalIcon,
+  SparklesIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
@@ -94,6 +96,24 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
       href: `/teams/${team.slug}/analytics`,
       active: activeTab === 'analytics',
       icon: ChartBarIcon,
+    });
+  }
+
+  if (can('ai.use')) {
+    navigations.push({
+      name: 'Copilot',
+      href: `/teams/${team.slug}/copilot`,
+      active: activeTab === 'copilot',
+      icon: SparklesIcon,
+    });
+  }
+
+  if (can('ai.configure')) {
+    navigations.push({
+      name: 'AI',
+      href: `/teams/${team.slug}/ai`,
+      active: activeTab === 'ai',
+      icon: CpuChipIcon,
     });
   }
 

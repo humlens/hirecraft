@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from 'react-daisyui';
+import JobDescriptionAI from '@/components/ai/JobDescriptionAI';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -334,6 +335,18 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
             value={f.title}
             onChange={(e) => set('title', e.target.value)}
           />
+          {can('ai.use') && (
+            <JobDescriptionAI
+              slug={slug}
+              title={f.title}
+              skills={f.requiredSkills
+                .split(',')
+                .map((x) => x.trim())
+                .filter(Boolean)}
+              workMode={f.workMode}
+              onApply={(html) => set('descriptionHtml', html)}
+            />
+          )}
           <label className="form-control w-full">
             <span className="label-text pb-2">
               {t('job-description', 'Description (basic HTML allowed)')}

@@ -38,6 +38,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [consent, setConsent] = useState(false);
   const [talentPool, setTalentPool] = useState(false);
+  const [aiReco, setAiReco] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
 
@@ -145,7 +146,11 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
         body: JSON.stringify({
           resumeId,
           answers,
-          consent: { application: consent, talentPool },
+          consent: {
+            application: consent,
+            talentPool,
+            aiRecommendations: aiReco,
+          },
         }),
       }
     );
@@ -420,6 +425,20 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                 {t(
                   'consent-talent-pool',
                   'Optional: keep me in their talent pool for future roles.'
+                )}
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm mt-0.5"
+                checked={aiReco}
+                onChange={(e) => setAiReco(e.target.checked)}
+              />
+              <span>
+                {t(
+                  'consent-ai-reco',
+                  'Optional: allow AI matching to recommend other jobs to me.'
                 )}
               </span>
             </label>

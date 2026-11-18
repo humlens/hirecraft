@@ -22,10 +22,28 @@
 | `TICK_SECONDS` | `60`                      | Worker interval                                                                                                                            |
 | `SMTP_*`       |                           | Needed for any email (candidate messages, staff notification emails). Without `SMTP_HOST`, sending a message is refused with a clear error |
 
+# AI and queue (Phase 4)
+
+| Variable                                                  | Default                  | Purpose                                                                                    |
+| --------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
+| `FEATURE_AI`                                              | `true`                   | `false` switches every AI feature off                                                      |
+| `AI_DEFAULT_PROVIDER`                                     | auto                     | `openai`, `anthropic`, `gemini`, `openai_compatible` (or `fake` in development / tests)    |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`   |                          | Platform keys. Portals without their own key use these and consume AI credits              |
+| `OPENAI_COMPATIBLE_BASE_URL`, `OPENAI_COMPATIBLE_API_KEY` |                          | Self-hosted / other OpenAI-compatible endpoint                                             |
+| `AI_MODEL_FAST`, `AI_MODEL_STANDARD`                      | per provider             | Override the default model per tier                                                        |
+| `AI_EMBEDDING_MODEL`                                      | `text-embedding-3-small` | Must return 1536-dimension vectors                                                         |
+| `AI_KEYS_ENCRYPTION_SECRET`                               | `NEXTAUTH_SECRET`        | Encrypts portal API keys (AES-256-GCM). Changing it makes saved keys unreadable            |
+| `AI_DEFAULT_MONTHLY_CREDITS`                              | `500`                    | Platform-key credit limit per portal per month                                             |
+| `AI_RATE_PER_MINUTE`                                      | `60`                     | Per-user token-bucket limit                                                                |
+| `AI_ALLOW_FAKE`                                           | unset                    | Allows the deterministic fake provider in a production build (browser tests only)          |
+| `AI_ALLOW_PRIVATE_BASE_URLS`                              | unset                    | `true` lets a portal point at localhost / private addresses (development only; SSRF guard) |
+| `REDIS_URL`                                               | empty                    | BullMQ queue and shared rate limit. Empty = jobs run inline in the web process             |
+| `QUEUE_INLINE_AWAIT`                                      | unset                    | Tests: wait for inline jobs to finish                                                      |
+
 Phase 1 added no environment variables. The variables below are added by
 later phases (documented here when introduced, together with `.env.example` and
-`lib/env.ts`): `REDIS_URL`, `AI_*`, `VAPID_*`, `PLATFORM_ADMIN_EMAILS`,
-`PUBLIC_PORTAL_BASE_DOMAIN`, `FEATURE_AI`, `FEATURE_CUSTOM_DOMAINS`,
+`lib/env.ts`): `VAPID_*`, `PLATFORM_ADMIN_EMAILS`,
+`PUBLIC_PORTAL_BASE_DOMAIN`, `FEATURE_CUSTOM_DOMAINS`,
 `FEATURE_PUSH`, `SMS_PROVIDER`.
 
 Existing variables are documented in `.env.example`.
