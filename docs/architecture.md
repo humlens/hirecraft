@@ -472,3 +472,20 @@ recommendations, copilot, interview assistant, comms, settings), and UI in
   vendor's native structured-output mode, so all providers behave the same.
 - Credits are charged only when the platform key is used.
 - Embeddings are 1536-dimensional; models returning another size are rejected.
+
+# Phase 5: Mobile and engagement
+
+See [mobile.md](./mobile.md).
+
+## 26. Modules added
+
+`lib/push.ts`, `lib/pwa.ts`, `models/reviewQueue.ts`, `public/sw.js`, `public/manifest.webmanifest`,
+`PushSubscription` table, `components/review/ReviewQueue.tsx`, `components/pwa/*`.
+
+## 27. Deviations and assumptions (Phase 5)
+
+- The review-queue "Later" action is per device (not stored); "Shortlist" moves to the next active
+  stage of the job's pipeline instead of a dedicated "shortlisted" flag.
+- SMS stays an interface only (no provider), as in Phase 3.
+- No background sync or offline editing: offline support is limited to public job pages and an offline notice.
+- The service worker is registered in production builds only.

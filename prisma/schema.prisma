@@ -71,6 +71,7 @@ model User {
   jobAssignments          JobAssignment[]
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
   teamMembers             TeamMember[]
   accounts                Account[]
   sessions                Session[]
@@ -1149,4 +1150,25 @@ model MatchAssessment {
   application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([teamId, applicationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: Web Push
+// ---------------------------------------------------------------------------
+
+// One row per browser/device a user agreed to receive push on. Creating the
+// row is the consent; deleting it (or the user unsubscribing) withdraws it.
+model PushSubscription {
+  id         String    @id @default(uuid())
+  userId     String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

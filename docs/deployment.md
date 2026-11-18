@@ -85,3 +85,9 @@ Interview reminders (24 h / 1 h), scheduled job publishing, closing dates and of
 - Set at least one provider key, or portals must bring their own.
 - Set `REDIS_URL` and run `npm run worker` to process resume parsing and embeddings off the web process.
 - Keep `AI_KEYS_ENCRYPTION_SECRET` stable: rotating it invalidates saved portal keys.
+
+## Web Push and the PWA (Phase 5)
+
+- Serve over HTTPS (service workers and push need it). Set the VAPID variables to enable push.
+- Do not cache `/sw.js` at a CDN; the app sends `Cache-Control: no-cache` for it.
+- If you front the app with a proxy, forward `/manifest.webmanifest`, `/offline.html` and `/icons/*` unauthenticated.

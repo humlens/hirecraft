@@ -14,9 +14,14 @@ import env from '@/lib/env';
 import { Theme, applyTheme } from '@/lib/theme';
 import { Themer } from '@boxyhq/react-ui/shared';
 import { AccountLayout } from '@/components/layouts';
+import { registerServiceWorker } from '@/lib/pwa';
 
 function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   const { session, ...props } = pageProps;
+
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   // Add mixpanel
   useEffect(() => {
@@ -41,6 +46,11 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
       <Head>
         <title>{app.name}</title>
         <link rel="icon" href="https://boxyhq.com/img/favicon.ico" />
+        <link key="manifest" rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta key="theme-color" name="theme-color" content="#3346D3" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
       <SessionProvider session={session}>
         <Toaster toastOptions={{ duration: 4000 }} />

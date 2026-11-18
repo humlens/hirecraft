@@ -143,6 +143,14 @@ const env = {
     ratePerMinute: Number(process.env.AI_RATE_PER_MINUTE) || 60,
   },
 
+  // Web Push (Phase 5). Generate keys with: npx web-push generate-vapid-keys
+  push: {
+    enabled: process.env.FEATURE_PUSH !== 'false',
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+  },
+
   // Shared secret for POST /api/internal/tick (worker / scheduler)
   cronSecret: process.env.CRON_SECRET || '',
 

@@ -40,10 +40,19 @@
 | `REDIS_URL`                                               | empty                    | BullMQ queue and shared rate limit. Empty = jobs run inline in the web process             |
 | `QUEUE_INLINE_AWAIT`                                      | unset                    | Tests: wait for inline jobs to finish                                                      |
 
+# Web Push and PWA (Phase 5)
+
+| Variable            | Default                    | Purpose                                                                                      |
+| ------------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
+| `FEATURE_PUSH`      | `true`                     | `false` disables Web Push (subscribe returns 503, nothing is sent)                           |
+| `VAPID_PUBLIC_KEY`  | empty (push off)           | Public VAPID key, sent to browsers so they can subscribe. `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | empty (push off)           | Private VAPID key. Server only, never returned by any API                                    |
+| `VAPID_SUBJECT`     | `mailto:admin@example.com` | Contact URL or `mailto:` the push services may use                                           |
+
 Phase 1 added no environment variables. The variables below are added by
 later phases (documented here when introduced, together with `.env.example` and
-`lib/env.ts`): `VAPID_*`, `PLATFORM_ADMIN_EMAILS`,
+`lib/env.ts`): `PLATFORM_ADMIN_EMAILS`,
 `PUBLIC_PORTAL_BASE_DOMAIN`, `FEATURE_CUSTOM_DOMAINS`,
-`FEATURE_PUSH`, `SMS_PROVIDER`.
+`SMS_PROVIDER`.
 
 Existing variables are documented in `.env.example`.

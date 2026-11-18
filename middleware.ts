@@ -46,6 +46,8 @@ const generateCSP = (): string => {
     'object-src': ["'none'"],
     'base-uri': ["'self'"],
     'form-action': ["'self'"],
+    'worker-src': ["'self'"],
+    'manifest-src': ["'self'"],
     'frame-ancestors': ["'none'"],
   };
 
@@ -74,6 +76,11 @@ const unAuthenticatedRoutes = [
   // Public job portal (careers pages, sitemap, robots) and its public APIs
   '/p/**',
   '/api/public/**',
+  // PWA: installability and offline page (no user data)
+  '/sw.js',
+  '/manifest.webmanifest',
+  '/offline.html',
+  '/icons/**',
   '/api/candidate/register',
   // Local-disk storage driver (HMAC-signed URLs; S3 in production)
   '/api/storage/local',

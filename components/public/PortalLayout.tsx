@@ -72,6 +72,12 @@ const PortalLayout = ({
         {canonicalPath && (
           <link rel="canonical" href={`${appUrl}${canonicalPath}`} />
         )}
+        <link
+          key="manifest"
+          rel="manifest"
+          href={`/api/public/portals/${portal.slug}/manifest`}
+        />
+        <meta key="theme-color" name="theme-color" content={primary} />
         {head}
       </Head>
 

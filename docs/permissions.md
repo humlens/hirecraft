@@ -172,3 +172,12 @@ scorecards; **Viewer** can read analytics but not export.
 | `POST copilot`                                                                              | `ai.use`; each tool re-checks its own permission and scope      |
 | `GET/PUT ai/settings`, `GET ai/usage`, `POST ai/test`                                       | `ai.configure`                                                  |
 | `GET/PUT candidate/resumes/:id/parsed`, `candidate/recommendations`, `candidate/ai-consent` | signed-in candidate, own data only                              |
+
+## Phase 5 endpoints
+
+| Endpoint                                        | Permission                            |
+| ----------------------------------------------- | ------------------------------------- |
+| `GET review-queue`                              | `applications.read`, within job scope |
+| Shortlist (`POST applications/stage`)           | `applications.manage`                 |
+| `GET push/config`, `POST/DELETE push/subscribe` | any signed-in user, own devices only  |
+| `GET public/portals/:slug/manifest`             | public                                |

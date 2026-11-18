@@ -3,6 +3,8 @@ import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import PushToggle from '@/components/pwa/PushToggle';
+import InstallPrompt from '@/components/pwa/InstallPrompt';
 
 type N = {
   id: string;
@@ -13,7 +15,13 @@ type N = {
   readAt: string | null;
   createdAt: string;
 };
-type Pref = { type: string; label: string; inApp: boolean; email: boolean };
+type Pref = {
+  type: string;
+  label: string;
+  inApp: boolean;
+  email: boolean;
+  push: boolean;
+};
 
 export const Notifications = () => {
   const { t } = useTranslation('common');
@@ -32,7 +40,15 @@ export const Notifications = () => {
 
   const savePref = async (p: Pref, patch: Partial<Pref>) => {
     const r = await send('/api/notifications/preferences', 'PUT', {
-      preferences: [{ type: p.type, inApp: p.inApp, email: p.email, ...patch }],
+      preferences: [
+        {
+          type: p.type,
+          inApp: p.inApp,
+          email: p.email,
+          push: p.push,
+          ...patch,
+        },
+      ],
     });
 
     if (!r.ok) toast.error(r.error as string);
@@ -83,44 +99,61 @@ export const Notifications = () => {
         </ul>
       </section>
 
+      <section className="space-y-3">
+        <PushToggle />
+        <InstallPrompt />
+      </section>
+
       <section className="space-y-2">
         <h3 className="font-semibold">
           {t('notification-preferences', 'Preferences')}
         </h3>
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>{t('type', 'Type')}</th>
-              <th>{t('in-app', 'In-app')}</th>
-              <th>{t('email')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(prefs.data ?? []).map((p) => (
-              <tr key={p.type}>
-                <td>{p.label}</td>
-                <td>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    aria-label={`${p.label} in-app`}
-                    checked={p.inApp}
-                    onChange={(e) => savePref(p, { inApp: e.target.checked })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    aria-label={`${p.label} email`}
-                    checked={p.email}
-                    onChange={(e) => savePref(p, { email: e.target.checked })}
-                  />
-                </td>
+        <div className="overflow-x-auto">
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>{t('type', 'Type')}</th>
+                <th>{t('in-app', 'In-app')}</th>
+                <th>{t('email')}</th>
+                <th>{t('push', 'Push')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(prefs.data ?? []).map((p) => (
+                <tr key={p.type}>
+                  <td>{p.label}</td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      aria-label={`${p.label} in-app`}
+                      checked={p.inApp}
+                      onChange={(e) => savePref(p, { inApp: e.target.checked })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      aria-label={`${p.label} email`}
+                      checked={p.email}
+                      onChange={(e) => savePref(p, { email: e.target.checked })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      aria-label={`${p.label} push`}
+                      checked={p.push}
+                      onChange={(e) => savePref(p, { push: e.target.checked })}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

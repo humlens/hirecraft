@@ -16,6 +16,7 @@ const list = async (userId: string) => {
     label: def.label,
     inApp: byType.get(type)?.inApp ?? true,
     email: byType.get(type)?.email ?? def.email,
+    push: byType.get(type)?.push ?? def.push,
   }));
 };
 
@@ -34,6 +35,8 @@ export default route({
         throw new ApiError(422, `Unknown notification type: ${p.type}`);
       }
 
+      const push = p.push ?? NOTIFICATION_TYPES[p.type].push;
+
       await prisma.notificationPreference.upsert({
         where: { userId_type: { userId: user.id, type: p.type } },
         create: {
@@ -41,8 +44,13 @@ export default route({
           type: p.type,
           inApp: p.inApp,
           email: p.email,
+          push,
         },
-        update: { inApp: p.inApp, email: p.email },
+        update: {
+          inApp: p.inApp,
+          email: p.email,
+          ...(p.push === undefined ? {} : { push: p.push }),
+        },
       });
     }
 

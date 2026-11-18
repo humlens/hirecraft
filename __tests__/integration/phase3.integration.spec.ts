@@ -390,7 +390,7 @@ suite('phase 3 (integration)', () => {
         type: 'job.published',
         title: 'x',
       });
-      expect(r).toEqual({ inApp: 0, email: 0 });
+      expect(r).toEqual({ inApp: 0, email: 0, push: 0 });
       expect((await notificationsOf('viewerA')).length).toBe(before);
       await prisma.notificationPreference.deleteMany({
         where: { userId: users.viewerA.id },

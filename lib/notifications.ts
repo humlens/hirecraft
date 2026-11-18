@@ -1,36 +1,56 @@
 import { prisma } from './prisma';
 import { sendEmail } from './email/sendEmail';
+import { sendPushToUsers } from './push';
 
 /**
  * Notification catalogue. `email` is the default for the email channel; users
  * override both channels per type (NotificationPreference). SMS goes through an
- * optional provider interface (not enabled), Web Push is Phase 5.
+ * optional provider interface (not enabled).
  */
 export const NOTIFICATION_TYPES = {
-  'application.created': { label: 'New application', email: true },
-  'application.shortlisted': { label: 'Candidate shortlisted', email: false },
+  'application.created': { label: 'New application', email: true, push: true },
+  'application.shortlisted': {
+    label: 'Candidate shortlisted',
+    email: false,
+    push: false,
+  },
   'application.stage_changed': {
     label: 'Application stage changed',
     email: false,
+    push: false,
   },
-  'interview.scheduled': { label: 'Interview scheduled', email: true },
-  'interview.reminder': { label: 'Interview reminder', email: true },
-  'interview.cancelled': { label: 'Interview cancelled', email: true },
-  'job.published': { label: 'Job published', email: false },
-  'job.expired': { label: 'Job expired', email: true },
-  'recruiter.assigned': { label: 'Assigned to a job', email: true },
+  'interview.scheduled': {
+    label: 'Interview scheduled',
+    email: true,
+    push: true,
+  },
+  'interview.reminder': {
+    label: 'Interview reminder',
+    email: true,
+    push: true,
+  },
+  'interview.cancelled': {
+    label: 'Interview cancelled',
+    email: true,
+    push: true,
+  },
+  'job.published': { label: 'Job published', email: false, push: false },
+  'job.expired': { label: 'Job expired', email: true, push: false },
+  'recruiter.assigned': { label: 'Assigned to a job', email: true, push: true },
   'offer.approval_requested': {
     label: 'Offer needs your approval',
     email: true,
+    push: true,
   },
-  'offer.sent': { label: 'Offer sent', email: true },
-  'offer.accepted': { label: 'Offer accepted', email: true },
-  'offer.declined': { label: 'Offer declined', email: true },
+  'offer.sent': { label: 'Offer sent', email: true, push: true },
+  'offer.accepted': { label: 'Offer accepted', email: true, push: true },
+  'offer.declined': { label: 'Offer declined', email: true, push: true },
   'message.draft_ready': {
     label: 'Message waiting for approval',
     email: false,
+    push: false,
   },
-  'ai.task_finished': { label: 'AI task finished', email: false },
+  'ai.task_finished': { label: 'AI task finished', email: false, push: false },
 } as const;
 
 export type NotificationType = keyof typeof NOTIFICATION_TYPES;
@@ -67,11 +87,12 @@ export async function notify(input: NotifyInput) {
   const ids = Array.from(new Set(input.userIds.filter(Boolean)));
 
   if (!ids.length) {
-    return { inApp: 0, email: 0 };
+    return { inApp: 0, email: 0, push: 0 };
   }
 
   let inApp = 0;
   let email = 0;
+  let push = 0;
 
   try {
     const [users, prefs] = await Promise.all([
@@ -84,6 +105,7 @@ export async function notify(input: NotifyInput) {
       }),
     ]);
     const prefByUser = new Map(prefs.map((p) => [p.userId, p]));
+    const pushIds: string[] = [];
 
     for (const user of users) {
       const pref = prefByUser.get(user.id);
@@ -106,6 +128,13 @@ export async function notify(input: NotifyInput) {
         inApp++;
       }
 
+      // Web Push only reaches users who subscribed a device (that is the consent)
+      const wantsPush = pref ? pref.push : NOTIFICATION_TYPES[input.type].push;
+
+      if (wantsPush) {
+        pushIds.push(user.id);
+      }
+
       if (wantsEmail && !input.inAppOnly) {
         try {
           await sendEmail({
@@ -126,11 +155,21 @@ export async function notify(input: NotifyInput) {
         }
       }
     }
+    if (pushIds.length) {
+      const r = await sendPushToUsers(pushIds, {
+        title: input.title,
+        body: input.body,
+        url: input.link,
+        tag: input.type,
+      });
+
+      push = r.sent;
+    }
   } catch (error) {
     console.error('notify failed', error);
   }
 
-  return { inApp, email };
+  return { inApp, email, push };
 }
 
 /** Users of a portal holding the given role-assignments on a job. */

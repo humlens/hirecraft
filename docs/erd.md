@@ -223,3 +223,17 @@ erDiagram
 
 `CandidateProfile` and `Job` gain `embedding vector(1536)` and `embeddedAt`;
 `CandidateProfile` also has a generated `search tsvector`.
+
+## Phase 5: Web Push
+
+```mermaid
+erDiagram
+  User ||--o{ PushSubscription : "subscribes devices"
+  PushSubscription {
+    string endpoint
+    string p256dh
+    string auth
+  }
+```
+
+`NotificationPreference.push` (existing column) now controls push per notification type.

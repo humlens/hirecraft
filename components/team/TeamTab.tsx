@@ -17,6 +17,7 @@ import {
   AdjustmentsHorizontalIcon,
   SparklesIcon,
   CpuChipIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
@@ -44,6 +45,15 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
       icon: Cog6ToothIcon,
     },
   ];
+
+  if (can('applications.read')) {
+    navigations.push({
+      name: 'Review',
+      href: `/teams/${team.slug}/review`,
+      active: activeTab === 'review',
+      icon: ClipboardDocumentCheckIcon,
+    });
+  }
 
   if (can('jobs.read')) {
     navigations.push({
@@ -225,13 +235,17 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
     });
   }
 
+  const quick = navigations.filter((n) =>
+    ['Review', 'Jobs', 'Interviews', 'Talent'].includes(n.name)
+  );
+
   return (
-    <div className="flex flex-col pb-6">
+    <div className="flex flex-col pb-20 md:pb-6">
       <h2 className="text-xl font-semibold mb-2">
         {heading ? heading : team.name}
       </h2>
       <nav
-        className=" flex flex-wrap border-b border-gray-300"
+        className="flex flex-nowrap overflow-x-auto whitespace-nowrap border-b border-gray-300 md:flex-wrap"
         aria-label="Tabs"
       >
         {navigations.map((menu) => {
@@ -251,6 +265,33 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
           );
         })}
       </nav>
+      {quick.length > 0 && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-white pb-[env(safe-area-inset-bottom)] dark:bg-black md:hidden"
+          aria-label="Quick navigation"
+        >
+          {[
+            ...quick,
+            {
+              name: 'Alerts',
+              href: '/notifications',
+              active: false,
+              icon: UsersIcon,
+            },
+          ].map((menu) => (
+            <Link
+              key={menu.href}
+              href={menu.href}
+              className={classNames(
+                'flex min-h-14 flex-1 items-center justify-center px-1 text-xs font-semibold',
+                menu.active ? 'bg-primary/10 text-primary' : 'opacity-70'
+              )}
+            >
+              {menu.name}
+            </Link>
+          ))}
+        </nav>
+      )}
     </div>
   );
 };

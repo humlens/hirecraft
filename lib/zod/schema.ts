@@ -687,6 +687,7 @@ export const preferencesSchema = z.object({
         type: z.string().min(1).max(60),
         inApp: z.boolean(),
         email: z.boolean(),
+        push: z.boolean().optional(),
       })
     )
     .max(40),
