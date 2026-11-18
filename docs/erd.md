@@ -82,3 +82,74 @@ Notes
   to NULL (the API refuses to delete a role that is still in use).
 - Models for jobs, candidates, applications, AI, billing entitlements and so on
   are added by later phases; this file grows with them.
+
+## Phase 2: jobs, candidates, applications
+
+```mermaid
+erDiagram
+  Team ||--o{ Job : "teamId"
+  Team ||--o{ PipelineStage : "teamId (jobId null = portal default)"
+  Team ||--o{ TenantCandidate : "teamId"
+  Job ||--o{ JobSkill : has
+  Job ||--o{ JobLocation : has
+  Job ||--o{ ScreeningQuestion : has
+  Job ||--o{ JobAssignment : "assigned to"
+  User ||--o{ JobAssignment : "assignee"
+  Job ||--o{ JobApplication : receives
+  TenantCandidate ||--o{ JobApplication : submits
+  User ||--o{ TenantCandidate : "userId (nullable)"
+  PipelineStage ||--o{ JobApplication : "current stage"
+  JobApplication ||--o{ ApplicationActivity : "append-only log"
+  CandidateResume ||--o{ JobApplication : "resumeId (nullable)"
+  User ||--o| CandidateProfile : "global profile"
+  CandidateProfile ||--o{ CandidateResume : has
+  CandidateProfile ||--o{ CandidateSkill : has
+  CandidateProfile ||--o{ CandidateExperience : has
+  CandidateProfile ||--o{ CandidateEducation : has
+  CandidateProfile ||--o{ CandidateCertification : has
+  User ||--o{ SavedJob : saves
+  Job ||--o{ SavedJob : "saved by"
+  User ||--o{ CandidateConsent : "gives (per teamId)"
+
+  Job {
+    string teamId FK
+    string slug "UK with teamId"
+    JobStatus status "DRAFT SCHEDULED PUBLISHED CLOSED ARCHIVED"
+    JobVisibility visibility "PUBLIC UNLISTED INTERNAL"
+    tsvector search "generated, GIN"
+    datetime deletedAt "soft delete"
+  }
+  JobApplication {
+    string teamId FK
+    string jobId FK
+    string tenantCandidateId FK "UK with jobId"
+    string stageId FK
+    json answers "question snapshot"
+    string rejectionReason "internal only"
+  }
+  ApplicationActivity {
+    string teamId FK
+    ActivityType type "APPLIED STAGE_CHANGED WITHDRAWN ..."
+    string fromStageId
+    string toStageId
+    string actorUserId "null = system"
+  }
+  TenantCandidate {
+    string teamId FK
+    string userId "null after erasure"
+    string email "UK with teamId"
+  }
+  CandidateConsent {
+    string userId
+    string teamId
+    ConsentPurpose purpose
+    string policyVersion
+    datetime revokedAt
+  }
+```
+
+Tenant-guarded (teamId required on every query): `Job`, `JobSkill`, `JobLocation`,
+`JobAssignment`, `ScreeningQuestion`, `PipelineStage`, `TenantCandidate`,
+`JobApplication`, `ApplicationActivity` (also append-only), `CandidateConsent`.
+`CandidateProfile`, its children, `CandidateResume` and `SavedJob` belong to a user,
+not a tenant.

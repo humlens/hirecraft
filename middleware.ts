@@ -71,6 +71,12 @@ const unAuthenticatedRoutes = [
   '/unlock-account',
   '/login/saml',
   '/.well-known/*',
+  // Public job portal (careers pages, sitemap, robots) and its public APIs
+  '/p/**',
+  '/api/public/**',
+  '/api/candidate/register',
+  // Local-disk storage driver (HMAC-signed URLs; S3 in production)
+  '/api/storage/local',
 ];
 
 export default async function middleware(req: NextRequest) {
@@ -78,7 +84,17 @@ export default async function middleware(req: NextRequest) {
 
   // Bypass routes that don't require authentication
   if (micromatch.isMatch(pathname, unAuthenticatedRoutes)) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+
+    // Public portal pages get the same security headers as the app
+    if (env.securityHeadersEnabled && pathname.startsWith('/p/')) {
+      response.headers.set('Content-Security-Policy', generateCSP());
+      Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+    }
+
+    return response;
   }
 
   const redirectUrl = new URL('/auth/login', req.url);

@@ -28,6 +28,8 @@
     "delete-team": "node --env-file .env delete-team.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1171.0",
+    "@aws-sdk/s3-request-presigner": "3.1171.0",
     "@boxyhq/metrics": "0.3.0",
     "@boxyhq/react-ui": "3.6.0",
     "@boxyhq/saml-jackson": "26.2.0",

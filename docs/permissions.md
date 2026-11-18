@@ -100,3 +100,30 @@ mechanism sees everything.
 | `PUT /api/teams/[slug]/members` (leave)         | membership                                                      |
 | `GET/POST/DELETE /api/teams/[slug]/invitations` | any of the above / `members.invite`                             |
 | `POST /api/teams` (create portal)               | any signed-in user                                              |
+
+## Phase 2 endpoints
+
+| Endpoint                                                           | Permission / rule                                                   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `GET /api/teams/[slug]/jobs`                                       | `jobs.read` (+ assignment scope)                                    |
+| `POST /api/teams/[slug]/jobs`                                      | `jobs.create` (creator is auto-assigned)                            |
+| `GET /api/teams/[slug]/jobs/[id]`                                  | `jobs.read` (+ scope; out of scope = 404)                           |
+| `PUT /api/teams/[slug]/jobs/[id]`                                  | `jobs.update` (+ scope)                                             |
+| `DELETE /api/teams/[slug]/jobs/[id]`                               | `jobs.delete` (soft delete)                                         |
+| `POST .../jobs/[id]/actions` `publish` `schedule` `close` `reopen` | `jobs.publish`                                                      |
+| `POST .../jobs/[id]/actions` `archive`                             | `jobs.delete`                                                       |
+| `POST .../jobs/[id]/actions` `duplicate`                           | `jobs.create`                                                       |
+| `GET/PUT .../jobs/[id]/assignments`                                | `jobs.update`; assignees must be members of the portal              |
+| `GET .../jobs/[id]/pipeline`                                       | `applications.read` (+ scope)                                       |
+| `GET .../applications/[id]`                                        | `applications.read` (+ scope)                                       |
+| `GET .../applications/[id]/resume`                                 | `applications.read` (+ scope); returns a 60 s signed URL            |
+| `POST .../applications/stage` (single or bulk)                     | `applications.manage` (+ scope)                                     |
+| `POST /api/candidate/register`                                     | public (rate-limited)                                               |
+| `/api/candidate/*`                                                 | signed-in user; every query is filtered by the caller's own user id |
+| `POST /api/public/portals/[portal]/jobs/[jobSlug]/apply`           | signed-in user; rate-limited; portal must be active                 |
+| `GET /api/storage/local`                                           | valid, unexpired HMAC signature (local driver only)                 |
+
+Role consequences: a **Recruiter** can create, edit and publish their own jobs and
+move candidates, but cannot archive/delete jobs; a **Viewer** can read jobs and
+applications but not change anything; **Hiring Manager** and **Interviewer** can read
+applications of their assigned jobs only.

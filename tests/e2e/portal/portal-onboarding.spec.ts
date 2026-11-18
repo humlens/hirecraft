@@ -13,6 +13,13 @@ const recruiter = {
 
 test.describe.configure({ mode: 'serial' });
 
+// Leave no data behind: other specs in the same run assume the seeded user
+// belongs to a single team.
+test.afterAll(async () => {
+  await prisma.team.deleteMany({ where: { slug: portal.slug } });
+  await prisma.user.deleteMany({ where: { email: recruiter.email } });
+});
+
 test('Owner creates a branded portal through the onboarding wizard', async ({
   page,
 }) => {

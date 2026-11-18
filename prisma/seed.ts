@@ -4,6 +4,7 @@ const client = new PrismaClient();
 const { hash } = require('bcryptjs');
 const { randomUUID } = require('crypto');
 const { PERMISSIONS, SYSTEM_ROLES } = require('../lib/portal-roles');
+const { DEFAULT_STAGES } = require('../lib/pipeline');
 
 let USER_COUNT = 10;
 const TEAM_COUNT = 5;
@@ -206,6 +207,19 @@ async function provisionPortal(teamId: string, companyName: string) {
     roleIds.set(def.key, role.id);
   }
 
+  if (
+    (await client.pipelineStage.count({ where: { teamId, jobId: null } })) === 0
+  ) {
+    await client.pipelineStage.createMany({
+      data: DEFAULT_STAGES.map((st: any, i: number) => ({
+        teamId,
+        name: st.name,
+        kind: st.kind,
+        order: i,
+      })),
+    });
+  }
+
   // Existing members: OWNER -> Portal Owner, ADMIN -> Admin, MEMBER -> Viewer
   const byBase: Record<string, string> = {
     OWNER: 'portal_owner',
@@ -224,6 +238,179 @@ async function provisionPortal(teamId: string, companyName: string) {
 
 const DEMO_PASSWORD = 'demo@123';
 
+const JOB_TEMPLATES = [
+  ['Senior Backend Engineer', 'Engineering', ['Node.js', 'PostgreSQL', 'AWS']],
+  ['Frontend Engineer', 'Engineering', ['React', 'TypeScript', 'CSS']],
+  ['Product Designer', 'Design', ['Figma', 'Prototyping', 'Research']],
+  ['Data Analyst', 'Data', ['SQL', 'Python', 'Tableau']],
+  ['DevOps Engineer', 'Platform', ['Kubernetes', 'Terraform', 'CI/CD']],
+  ['Technical Recruiter', 'People', ['Sourcing', 'Interviewing', 'ATS']],
+] as const;
+
+const CITIES = ['Pune', 'Bengaluru', 'Hyderabad', 'Mumbai', 'Delhi'];
+
+// 6 jobs per portal (12 in total): mostly published, one draft, one closed.
+async function seedJobs(teamId: string, ownerUserId: string) {
+  const jobs: any[] = [];
+
+  for (let i = 0; i < JOB_TEMPLATES.length; i++) {
+    const [title, department, skills] = JOB_TEMPLATES[i];
+    const status = i === 4 ? 'DRAFT' : i === 5 ? 'CLOSED' : 'PUBLISHED';
+    const job = await client.job.create({
+      data: {
+        teamId,
+        title,
+        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        descriptionHtml: `<p>${faker.lorem.paragraphs(2, '</p><p>')}</p>`,
+        responsibilities: [faker.lorem.sentence(), faker.lorem.sentence()],
+        status,
+        publishedAt: status === 'DRAFT' ? null : new Date(),
+        department,
+        workMode: ['REMOTE', 'HYBRID', 'ONSITE'][i % 3],
+        employmentType: 'FULL_TIME',
+        experienceMin: 2,
+        experienceMax: 8,
+        salaryMin: 800000 + i * 100000,
+        salaryMax: 1500000 + i * 100000,
+        salaryVisible: i % 2 === 0,
+        createdById: ownerUserId,
+        skills: {
+          create: skills.map((skill, k) => ({
+            teamId,
+            skill,
+            required: k < 2,
+          })),
+        },
+        locations: {
+          create: [
+            { teamId, city: CITIES[i % CITIES.length], country: 'India' },
+          ],
+        },
+        questions: {
+          create: [
+            {
+              teamId,
+              type: 'BOOLEAN',
+              prompt: 'Are you comfortable with on-call rotations?',
+              required: false,
+              order: 0,
+            },
+            {
+              teamId,
+              type: 'NUMBER',
+              prompt: 'Years of relevant experience?',
+              required: true,
+              order: 1,
+            },
+          ],
+        },
+        assignments: {
+          create: [{ teamId, userId: ownerUserId, kind: 'RECRUITER' }],
+        },
+      },
+    });
+    jobs.push(job);
+  }
+
+  return jobs;
+}
+
+// 20 candidates with a profile; applications spread over every pipeline stage.
+async function seedCandidatesAndApplications(
+  portals: { teamId: string; jobs: any[] }[]
+) {
+  const password = await hash(DEMO_PASSWORD, 12);
+  const candidates: any[] = [];
+
+  for (let n = 1; n <= 20; n++) {
+    const user = await client.user.create({
+      data: {
+        name: faker.person.fullName(),
+        email: `candidate${n}@demo.example`,
+        password,
+        emailVerified: new Date(),
+        candidateProfile: {
+          create: {
+            headline: faker.person.jobTitle(),
+            summary: faker.lorem.sentences(2),
+            location: CITIES[n % CITIES.length],
+            skills: {
+              create: [
+                { skill: 'Node.js' },
+                { skill: 'SQL' },
+                { skill: 'AWS' },
+              ],
+            },
+          },
+        },
+      },
+    });
+    candidates.push(user);
+  }
+
+  let created = 0;
+
+  for (const { teamId, jobs } of portals) {
+    const stages = await client.pipelineStage.findMany({
+      where: { teamId, jobId: null },
+      orderBy: { order: 'asc' },
+    });
+    const open = jobs.filter((j) => j.status !== 'DRAFT');
+    let k = 0;
+
+    for (const user of candidates) {
+      // each candidate applies to 1-2 jobs of every portal
+      for (let a = 0; a < 1 + (k % 2); a++) {
+        const job = open[(k + a) % open.length];
+        const stage = stages[(k + a * 5) % stages.length]; // covers all 13 stages
+        const tc = await client.tenantCandidate.upsert({
+          where: { teamId_email: { teamId, email: user.email } },
+          create: {
+            teamId,
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+          },
+          update: {},
+        });
+
+        try {
+          const app = await client.jobApplication.create({
+            data: {
+              teamId,
+              jobId: job.id,
+              tenantCandidateId: tc.id,
+              stageId: stage.id,
+              answers: [],
+              withdrawnAt: stage.kind === 'WITHDRAWN' ? new Date() : null,
+              rejectionReason:
+                stage.kind === 'REJECTED' ? 'Not a fit for this role' : null,
+            },
+          });
+
+          await client.applicationActivity.create({
+            data: {
+              teamId,
+              applicationId: app.id,
+              actorUserId: user.id,
+              type: 'APPLIED',
+              payload: { toName: stages[0].name },
+            },
+          });
+          created++;
+        } catch {
+          // already applied to this job: skip
+        }
+      }
+      k++;
+    }
+  }
+
+  console.log(
+    `Seeded ${candidates.length} candidates and ${created} applications`
+  );
+}
+
 // Two demo portals with one member per portal role.
 async function seedDemoPortals() {
   const portals = [
@@ -234,6 +421,8 @@ async function seedDemoPortals() {
       domain: 'techcareers.example',
     },
   ];
+
+  const seeded: { teamId: string; jobs: any[] }[] = [];
 
   for (const portal of portals) {
     const team = await client.team.create({
@@ -250,6 +439,7 @@ async function seedDemoPortals() {
     });
 
     const password = await hash(DEMO_PASSWORD, 12);
+    let ownerId = '';
 
     for (const def of SYSTEM_ROLES) {
       const user = await client.user.create({
@@ -268,8 +458,16 @@ async function seedDemoPortals() {
           portalRoleId: roleIds.get(def.key),
         },
       });
+
+      if (def.key === 'portal_owner') {
+        ownerId = user.id;
+      }
     }
+
+    seeded.push({ teamId: team.id, jobs: await seedJobs(team.id, ownerId) });
   }
+
+  await seedCandidatesAndApplications(seeded);
 
   console.log(
     `Seeded demo portals (login as e.g. portal-owner@acme.example / ${DEMO_PASSWORD})`

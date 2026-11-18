@@ -39,3 +39,22 @@ npm run test:e2e              # Playwright (needs a running app + database)
 The e2e suite runs against `npm run start`. Set `FEATURE_TEAM_WEBHOOK=false`
 unless you have a reachable Svix server (the kit treats a missing Svix key as
 configured).
+
+## Resume storage (Phase 2)
+
+- **Production:** an S3-compatible bucket (private, server-side encryption on). Set
+  `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (and
+  `S3_ENDPOINT` for non-AWS). The app only needs `PutObject`, `GetObject`,
+  `DeleteObject` on the bucket. Downloads use 60-second pre-signed URLs, so the bucket
+  must **not** be public.
+- **Local development:** `docker compose up -d` starts MinIO (console on
+  <http://localhost:9001>, `minioadmin` / `minioadmin`) and creates the `resumes`
+  bucket. Use `S3_ENDPOINT=http://localhost:9000`, `S3_BUCKET=resumes`,
+  `S3_ACCESS_KEY_ID=minioadmin`, `S3_SECRET_ACCESS_KEY=minioadmin`. Without these the
+  app falls back to local disk.
+- **Multiple instances:** the in-memory rate limiter is per process. Put a shared
+  limiter (Redis, planned) or the platform's rate limiting in front for production.
+- **Uploads and the virus scan:** the default scanner allows everything. Register a
+  scanner (for example ClamAV) with `setUploadScanner` from `lib/uploadValidation.ts`
+  before going live.
+- **Scheduled jobs** go live at their `publishAt` without a worker (evaluated when read).

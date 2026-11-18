@@ -9,6 +9,27 @@ export const TENANT_MODELS = new Set<string>([
   'PortalProfile',
   'PortalBranding',
   'PortalRole',
+  'Job',
+  'JobSkill',
+  'JobLocation',
+  'JobAssignment',
+  'ScreeningQuestion',
+  'PipelineStage',
+  'TenantCandidate',
+  'JobApplication',
+  'ApplicationActivity',
+  'CandidateConsent',
+]);
+
+/** Rows that may be created but never changed or removed by the app. */
+export const APPEND_ONLY_MODELS = new Set<string>(['ApplicationActivity']);
+
+const MUTATING_OPERATIONS = new Set([
+  'update',
+  'updateMany',
+  'delete',
+  'deleteMany',
+  'upsert',
 ]);
 
 const WHERE_OPERATIONS = new Set([
@@ -76,6 +97,10 @@ export function assertTenantScoped(
     return null;
   }
 
+  if (APPEND_ONLY_MODELS.has(model) && MUTATING_OPERATIONS.has(operation)) {
+    return `Tenant guard: ${model} is append-only; ${operation} is not allowed.`;
+  }
+
   if (WHERE_OPERATIONS.has(operation)) {
     if (!hasTeamFilter(args?.where)) {
       return `Tenant guard: ${model}.${operation} must filter by teamId.`;
@@ -109,6 +134,10 @@ export const tenantGuard = Prisma.defineExtension({
         const problem = assertTenantScoped(model, operation, args);
 
         if (problem) {
+          if (problem.includes('append-only')) {
+            throw new TenantGuardError(problem);
+          }
+
           if (process.env.NODE_ENV === 'production') {
             console.error(problem);
           } else {

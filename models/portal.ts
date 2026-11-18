@@ -8,6 +8,7 @@ import sanitizeHtml from 'sanitize-html';
 import { ApiError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
 import { PERMISSIONS, RESERVED_SLUGS, SYSTEM_ROLES } from '@/lib/portal-roles';
+import { DEFAULT_STAGES } from '@/lib/pipeline';
 
 type Tx = Prisma.TransactionClient;
 
@@ -64,6 +65,27 @@ export async function syncSystemRoles(tx: Tx, teamId: string) {
   }
 
   return byKey;
+}
+
+/** Creates the portal's default pipeline stages if it has none. Idempotent. */
+export async function ensureDefaultStages(tx: Tx, teamId: string) {
+  const existing = await tx.pipelineStage.count({
+    where: { teamId, jobId: null },
+  });
+
+  if (existing > 0) {
+    return;
+  }
+
+  await tx.pipelineStage.createMany({
+    data: DEFAULT_STAGES.map((s, i) => ({
+      teamId,
+      jobId: null,
+      name: s.name,
+      kind: s.kind,
+      order: i,
+    })),
+  });
 }
 
 export type PortalProfileInput = {
@@ -143,6 +165,7 @@ export async function createPortal(params: {
       const team = await tx.team.create({ data: { name, slug } });
 
       const roleIds = await syncSystemRoles(tx, team.id);
+      await ensureDefaultStages(tx, team.id);
 
       await tx.teamMember.create({
         data: {

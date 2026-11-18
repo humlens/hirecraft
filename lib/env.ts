@@ -114,6 +114,23 @@ const env = {
 
   maxLoginAttempts: Number(process.env.MAX_LOGIN_ATTEMPTS) || 5,
 
+  // File storage. With S3_BUCKET set, S3-compatible storage is used; otherwise
+  // files go to a local directory (development and tests only).
+  storage: {
+    s3: {
+      endpoint: process.env.S3_ENDPOINT || undefined,
+      region: process.env.S3_REGION || 'us-east-1',
+      bucket: process.env.S3_BUCKET || '',
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
+    },
+    localDir: process.env.STORAGE_LOCAL_DIR || '.storage',
+    signingSecret:
+      process.env.STORAGE_SIGNING_SECRET || process.env.NEXTAUTH_SECRET || '',
+    maxResumeBytes: Number(process.env.MAX_RESUME_BYTES) || 5 * 1024 * 1024,
+  },
+
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
 
   stripe: {

@@ -26,7 +26,15 @@ type EventType =
   | 'role.create'
   | 'role.update'
   | 'role.delete'
-  | 'member.role.assign';
+  | 'member.role.assign'
+  | 'job.create'
+  | 'job.update'
+  | 'job.publish'
+  | 'job.close'
+  | 'job.archive'
+  | 'job.delete'
+  | 'application.stage_change'
+  | 'resume.download';
 
 type Request = {
   action: EventType;

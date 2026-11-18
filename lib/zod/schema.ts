@@ -256,3 +256,234 @@ export const ssoVerifySchema = z
   .refine((data) => data.email || data.slug, {
     message: 'At least one of email or slug is required',
   });
+
+// ---------------------------------------------------------------------------
+// Jobs
+// ---------------------------------------------------------------------------
+
+const optStr = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => v || null)
+    .nullable()
+    .optional();
+
+const optInt = (min: number, max: number) =>
+  z.number().int().min(min).max(max).nullable().optional();
+
+export const jobQuestionSchema = z
+  .object({
+    type: z.enum(['TEXT', 'SINGLE', 'MULTI', 'NUMBER', 'BOOLEAN']),
+    prompt: z.string().trim().min(3).max(300),
+    options: z.array(z.string().trim().min(1).max(100)).max(20).default([]),
+    required: z.boolean().default(false),
+  })
+  .refine(
+    (q) =>
+      !['SINGLE', 'MULTI'].includes(q.type) || new Set(q.options).size >= 2,
+    'Choice questions need at least two distinct options'
+  );
+
+const jobBase = z.object({
+  title: z.string().trim().min(3).max(120),
+  descriptionHtml: z.string().max(50000).default(''),
+  responsibilities: z
+    .array(z.string().trim().min(1).max(300))
+    .max(20)
+    .default([]),
+  visibility: z.enum(['PUBLIC', 'UNLISTED', 'INTERNAL']).default('PUBLIC'),
+  employmentType: z
+    .enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'TEMPORARY'])
+    .default('FULL_TIME'),
+  workMode: z.enum(['REMOTE', 'HYBRID', 'ONSITE']).default('ONSITE'),
+  experienceMin: optInt(0, 60),
+  experienceMax: optInt(0, 60),
+  salaryMin: optInt(0, 1_000_000_000),
+  salaryMax: optInt(0, 1_000_000_000),
+  salaryCurrency: z.string().trim().length(3).toUpperCase().default('INR'),
+  salaryVisible: z.boolean().default(false),
+  department: optStr(100),
+  industry: optStr(100),
+  education: optStr(100),
+  vacancies: z.number().int().min(1).max(1000).default(1),
+  benefits: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
+  companyInfoOverride: optStr(5000),
+  closesAt: z.string().datetime().nullable().optional(),
+  skills: z
+    .array(
+      z.object({
+        skill: z.string().trim().min(1).max(60),
+        required: z.boolean().default(true),
+      })
+    )
+    .max(50)
+    .default([]),
+  locations: z
+    .array(
+      z.object({
+        city: optStr(100),
+        region: optStr(100),
+        country: optStr(100),
+      })
+    )
+    .max(10)
+    .default([]),
+  questions: z.array(jobQuestionSchema).max(20).default([]),
+});
+
+const jobRanges = (
+  v: Partial<{
+    experienceMin: number | null;
+    experienceMax: number | null;
+    salaryMin: number | null;
+    salaryMax: number | null;
+  }>
+) =>
+  (v.experienceMin == null ||
+    v.experienceMax == null ||
+    v.experienceMin <= v.experienceMax) &&
+  (v.salaryMin == null || v.salaryMax == null || v.salaryMin <= v.salaryMax);
+
+export const createJobSchema = jobBase.refine(
+  jobRanges,
+  'Minimum cannot exceed maximum'
+);
+
+export const updateJobSchema = jobBase
+  .partial()
+  .refine(jobRanges, 'Minimum cannot exceed maximum');
+
+export const jobIdSchema = z.object({ jobId: z.string().min(1).max(64) });
+
+export const listJobsSchema = z.object({
+  status: z
+    .enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'CLOSED', 'ARCHIVED'])
+    .optional(),
+  q: z.string().trim().max(100).optional(),
+  cursor: z.string().max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const jobActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('publish') }),
+  z.object({ action: z.literal('schedule'), publishAt: z.string().datetime() }),
+  z.object({ action: z.literal('close') }),
+  z.object({ action: z.literal('reopen') }),
+  z.object({ action: z.literal('archive') }),
+  z.object({ action: z.literal('duplicate') }),
+]);
+
+export const jobAssignmentsSchema = z.object({
+  assignments: z
+    .array(
+      z.object({
+        userId: z.string().min(1).max(64),
+        kind: z.enum(['RECRUITER', 'HIRING_MANAGER', 'INTERVIEWER']),
+      })
+    )
+    .max(50),
+});
+
+// ---------------------------------------------------------------------------
+// Applications and candidates
+// ---------------------------------------------------------------------------
+
+export const applicationIdSchema = z.object({
+  applicationId: z.string().min(1).max(64),
+});
+
+export const moveStageSchema = z.object({
+  stageId: z.string().min(1).max(64),
+  rejectionReason: z.string().trim().max(500).optional(),
+});
+
+export const bulkMoveStageSchema = moveStageSchema.extend({
+  applicationIds: z.array(z.string().min(1).max(64)).min(1).max(100),
+});
+
+export const candidateRegisterSchema = z.object({
+  name: name(),
+  email,
+  password,
+});
+
+export const applySchema = z.object({
+  resumeId: z.string().min(1).max(64),
+  answers: z
+    .record(
+      z.string().max(64),
+      z.union([
+        z.string().max(5000),
+        z.number(),
+        z.boolean(),
+        z.array(z.string().max(200)).max(20),
+      ])
+    )
+    .default({}),
+  consent: z.object({
+    application: z.literal(true, {
+      errorMap: () => ({
+        message:
+          'You must consent to the application being shared with the employer',
+      }),
+    }),
+    talentPool: z.boolean().default(false),
+  }),
+});
+
+export const candidateProfileSchema = z.object({
+  headline: optStr(150),
+  summary: optStr(3000),
+  phone: optStr(30),
+  location: optStr(120),
+  preferredLocations: z
+    .array(z.string().trim().min(1).max(100))
+    .max(20)
+    .optional(),
+  expectedSalary: optInt(0, 1_000_000_000),
+  noticePeriodDays: optInt(0, 365),
+  employmentStatus: optStr(60),
+  linkedinUrl: optStr(300),
+  githubUrl: optStr(300),
+  portfolioUrl: optStr(300),
+  skills: z.array(z.string().trim().min(1).max(60)).max(60).optional(),
+  experiences: z
+    .array(
+      z.object({
+        company: z.string().trim().min(1).max(120),
+        title: z.string().trim().min(1).max(120),
+        startDate: z.string().date(),
+        endDate: z.string().date().nullable().optional(),
+        current: z.boolean().default(false),
+        description: optStr(3000),
+      })
+    )
+    .max(30)
+    .optional(),
+  educations: z
+    .array(
+      z.object({
+        institution: z.string().trim().min(1).max(120),
+        degree: z.string().trim().min(1).max(120),
+        field: optStr(120),
+        startYear: optInt(1950, 2100),
+        endYear: optInt(1950, 2100),
+      })
+    )
+    .max(15)
+    .optional(),
+  certifications: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(120),
+        issuer: optStr(120),
+        year: optInt(1950, 2100),
+      })
+    )
+    .max(20)
+    .optional(),
+});
+
+export const savedJobSchema = z.object({ jobId: z.string().min(1).max(64) });

@@ -63,10 +63,14 @@ model User {
   invalid_login_attempts Int       @default(0)
   lockedAt               DateTime?
 
-  teamMembers TeamMember[]
-  accounts    Account[]
-  sessions    Session[]
-  invitations Invitation[]
+  candidateProfile CandidateProfile?
+  tenantCandidates TenantCandidate[]
+  savedJobs        SavedJob[]
+  jobAssignments   JobAssignment[]
+  teamMembers      TeamMember[]
+  accounts         Account[]
+  sessions         Session[]
+  invitations      Invitation[]
 }
 
 enum PortalStatus {
@@ -90,9 +94,12 @@ model Team {
   invitations     Invitation[]
   apiKeys         ApiKey[]
 
-  portalProfile  PortalProfile?
-  portalBranding PortalBranding?
-  portalRoles    PortalRole[]
+  portalProfile    PortalProfile?
+  portalBranding   PortalBranding?
+  portalRoles      PortalRole[]
+  jobs             Job[]
+  pipelineStages   PipelineStage[]
+  tenantCandidates TenantCandidate[]
 
   @@index([billingId])
 }
@@ -320,4 +327,389 @@ model PortalRolePermission {
 
   @@id([roleId, permissionId])
   @@index([permissionId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: jobs, candidates, applications, pipeline
+// ---------------------------------------------------------------------------
+
+enum JobStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+enum JobVisibility {
+  PUBLIC
+  UNLISTED
+  INTERNAL
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  TEMPORARY
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum JobAssignmentKind {
+  RECRUITER
+  HIRING_MANAGER
+  INTERVIEWER
+}
+
+enum QuestionType {
+  TEXT
+  SINGLE
+  MULTI
+  NUMBER
+  BOOLEAN
+}
+
+enum StageKind {
+  ACTIVE
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ActivityType {
+  APPLIED
+  STAGE_CHANGED
+  WITHDRAWN
+  NOTE
+  EMAIL
+  AI_ASSESSMENT
+  INTERVIEW
+  OFFER
+}
+
+enum ConsentPurpose {
+  APPLICATION
+  TALENT_POOL
+  AI_RECOMMENDATIONS
+  MARKETING
+}
+
+enum ResumeParseStatus {
+  PENDING
+  PARSED
+  NEEDS_REVIEW
+  FAILED
+}
+
+model Job {
+  id                  String                   @id @default(uuid())
+  teamId              String
+  title               String
+  slug                String
+  descriptionHtml     String                   @default("") @db.Text
+  responsibilities    String[]                 @default([])
+  status              JobStatus                @default(DRAFT)
+  publishAt           DateTime?
+  publishedAt         DateTime?
+  closesAt            DateTime?
+  visibility          JobVisibility            @default(PUBLIC)
+  employmentType      EmploymentType           @default(FULL_TIME)
+  workMode            WorkMode                 @default(ONSITE)
+  experienceMin       Int?
+  experienceMax       Int?
+  salaryMin           Int?
+  salaryMax           Int?
+  salaryCurrency      String                   @default("INR")
+  salaryVisible       Boolean                  @default(false)
+  department          String?
+  industry            String?
+  education           String?
+  vacancies           Int                      @default(1)
+  benefits            String[]                 @default([])
+  companyInfoOverride String?                  @db.Text
+  createdById         String?
+  deletedAt           DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  // Generated column (see migration): full-text search over title/description
+  search              Unsupported("tsvector")?
+
+  team         Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  skills       JobSkill[]
+  locations    JobLocation[]
+  assignments  JobAssignment[]
+  questions    ScreeningQuestion[]
+  applications JobApplication[]
+  savedBy      SavedJob[]
+
+  @@unique([teamId, slug])
+  @@index([teamId, status, deletedAt])
+  @@index([teamId, createdAt])
+  @@index([search], type: Gin)
+}
+
+model JobSkill {
+  id       String  @id @default(uuid())
+  teamId   String
+  jobId    String
+  skill    String
+  required Boolean @default(true)
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, skill])
+  @@index([teamId, jobId])
+}
+
+model JobLocation {
+  id      String  @id @default(uuid())
+  teamId  String
+  jobId   String
+  city    String?
+  region  String?
+  country String?
+  lat     Float?
+  lng     Float?
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, jobId])
+  @@index([teamId, city])
+}
+
+model JobAssignment {
+  id     String            @id @default(uuid())
+  teamId String
+  jobId  String
+  userId String
+  kind   JobAssignmentKind
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, userId, kind])
+  @@index([teamId, userId])
+}
+
+model ScreeningQuestion {
+  id       String       @id @default(uuid())
+  teamId   String
+  jobId    String
+  type     QuestionType
+  prompt   String
+  options  String[]     @default([])
+  required Boolean      @default(false)
+  order    Int          @default(0)
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, jobId, order])
+}
+
+model CandidateProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  headline           String?
+  summary            String?  @db.Text
+  phone              String?
+  location           String?
+  preferredLocations String[] @default([])
+  expectedSalary     Int?
+  noticePeriodDays   Int?
+  employmentStatus   String?
+  linkedinUrl        String?
+  githubUrl          String?
+  portfolioUrl       String?
+  completeness       Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills         CandidateSkill[]
+  experiences    CandidateExperience[]
+  educations     CandidateEducation[]
+  certifications CandidateCertification[]
+  resumes        CandidateResume[]
+}
+
+model CandidateSkill {
+  id        String @id @default(uuid())
+  profileId String
+  skill     String
+
+  profile CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, skill])
+}
+
+model CandidateExperience {
+  id          String    @id @default(uuid())
+  profileId   String
+  company     String
+  title       String
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  description String?   @db.Text
+
+  profile CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model CandidateEducation {
+  id          String  @id @default(uuid())
+  profileId   String
+  institution String
+  degree      String
+  field       String?
+  startYear   Int?
+  endYear     Int?
+
+  profile CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model CandidateCertification {
+  id        String  @id @default(uuid())
+  profileId String
+  name      String
+  issuer    String?
+  year      Int?
+
+  profile CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model CandidateResume {
+  id          String            @id @default(uuid())
+  profileId   String
+  storageKey  String
+  fileName    String
+  mime        String
+  size        Int
+  version     Int               @default(1)
+  isDefault   Boolean           @default(false)
+  parseStatus ResumeParseStatus @default(PENDING)
+  parsedJson  Json?
+  parsedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime          @default(now())
+
+  profile      CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@index([profileId, deletedAt])
+}
+
+model CandidateConsent {
+  id            String         @id @default(uuid())
+  userId        String
+  teamId        String
+  purpose       ConsentPurpose
+  granted       Boolean
+  grantedAt     DateTime       @default(now())
+  revokedAt     DateTime?
+  policyVersion String
+
+  @@index([userId])
+  @@index([teamId, purpose])
+}
+
+model TenantCandidate {
+  id           String   @id @default(uuid())
+  teamId       String
+  userId       String?
+  name         String
+  email        String
+  phone        String?
+  source       String   @default("portal")
+  mergedIntoId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  team         Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  applications JobApplication[]
+
+  @@unique([teamId, email])
+  @@index([teamId, userId])
+}
+
+model SavedJob {
+  id        String   @id @default(uuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model PipelineStage {
+  id        String    @id @default(uuid())
+  teamId    String
+  jobId     String?
+  name      String
+  order     Int
+  kind      StageKind @default(ACTIVE)
+  createdAt DateTime  @default(now())
+
+  team         Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@index([teamId, jobId, order])
+}
+
+model JobApplication {
+  id                String    @id @default(uuid())
+  teamId            String
+  jobId             String
+  tenantCandidateId String
+  resumeId          String?
+  stageId           String
+  source            String    @default("portal")
+  answers           Json      @default("{}")
+  rejectionReason   String?
+  withdrawnAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  job             Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tenantCandidate TenantCandidate       @relation(fields: [tenantCandidateId], references: [id], onDelete: Cascade)
+  resume          CandidateResume?      @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  stage           PipelineStage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  activities      ApplicationActivity[]
+
+  @@unique([jobId, tenantCandidateId])
+  @@index([teamId, jobId, stageId])
+  @@index([teamId, createdAt])
+  @@index([tenantCandidateId])
+}
+
+// Append-only: the tenant guard refuses update/delete through the app client.
+model ApplicationActivity {
+  id            String       @id @default(uuid())
+  teamId        String
+  applicationId String
+  actorUserId   String?
+  type          ActivityType
+  fromStageId   String?
+  toStageId     String?
+  payload       Json?
+  createdAt     DateTime     @default(now())
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, applicationId, createdAt])
 }

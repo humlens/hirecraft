@@ -8,6 +8,7 @@ import {
   BanknotesIcon,
   BuildingOffice2Icon,
   ShieldCheckIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
@@ -35,6 +36,15 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
       icon: Cog6ToothIcon,
     },
   ];
+
+  if (can('jobs.read')) {
+    navigations.push({
+      name: 'Jobs',
+      href: `/teams/${team.slug}/jobs`,
+      active: activeTab === 'jobs',
+      icon: BriefcaseIcon,
+    });
+  }
 
   if (can('portal.update') || can('branding.update')) {
     navigations.push({
