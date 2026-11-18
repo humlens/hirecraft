@@ -48,7 +48,7 @@ test('set up: portal, published job, two candidates who applied', async ({
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create portal' }).click();
-  await page.waitForURL(`/teams/${slug}/settings`);
+  await page.waitForURL(`/teams/${slug}/dashboard`);
 
   const created = await page.request.post(`/api/teams/${slug}/jobs`, {
     data: {

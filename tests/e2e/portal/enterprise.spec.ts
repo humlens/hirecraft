@@ -40,7 +40,7 @@ test('set up a Free portal with three draft jobs', async ({ page }) => {
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create portal' }).click();
-  await page.waitForURL(`/teams/${slug}/settings`);
+  await page.waitForURL(`/teams/${slug}/dashboard`);
 
   for (const title of ['First role', 'Second role', 'Third role']) {
     const r = await page.request.post(`/api/teams/${slug}/jobs`, {

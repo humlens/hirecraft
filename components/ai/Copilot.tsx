@@ -1,7 +1,8 @@
 import { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
 type Source = { type: string; id: string; label: string };
@@ -28,6 +29,8 @@ const Copilot = ({ slug }: { slug: string }) => {
   const [thread, setThread] = useState<Msg[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const asked = useRef(false);
 
   const prompts = [
     t('copilot-p1', 'Which candidates best match our open roles?'),
@@ -70,6 +73,17 @@ const Copilot = ({ slug }: { slug: string }) => {
       },
     ]);
   };
+
+  // the dashboard assistant sends its question as ?q=
+  useEffect(() => {
+    const q = router.query.q;
+
+    if (!asked.current && typeof q === 'string' && q.trim()) {
+      asked.current = true;
+      ask(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.q]);
 
   return (
     <div className="flex flex-wrap gap-4">

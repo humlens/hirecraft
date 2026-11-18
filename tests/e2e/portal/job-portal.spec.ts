@@ -29,7 +29,7 @@ test('Recruiter creates, publishes a job; candidate applies; recruiter moves the
   const login = new LoginPage(page);
   await login.goto();
   await login.credentialLogin(user.email, user.password);
-  await page.waitForURL(/\/teams\/.+\/settings/);
+  await page.waitForURL(/\/teams\/.+\/(settings|dashboard)/);
 
   await page.goto('/onboarding');
   await page.getByRole('button', { name: 'Next' }).click();
@@ -39,7 +39,7 @@ test('Recruiter creates, publishes a job; candidate applies; recruiter moves the
   await page.getByLabel('Hero title').fill('Build with Careers Co');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create portal' }).click();
-  await page.waitForURL(`/teams/${portal.slug}/settings`);
+  await page.waitForURL(`/teams/${portal.slug}/dashboard`);
 
   // --- job: create as draft, then publish ---
   await page.goto(`/teams/${portal.slug}/jobs/new`);

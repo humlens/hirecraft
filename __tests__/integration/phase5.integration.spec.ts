@@ -61,6 +61,8 @@ const load = () => ({
   configApi: require('pages/api/push/config').default,
   subscribeApi: require('pages/api/push/subscribe').default,
   prefsApi: require('pages/api/notifications/preferences').default,
+  dashboardApi: require('pages/api/teams/[slug]/dashboard').default,
+  slugCheckApi: require('pages/api/teams/slug-check').default,
   manifestApi: require('pages/api/public/portals/[portal]/manifest').default,
 });
 
@@ -801,6 +803,67 @@ suite('phase 5: push, review queue, manifest (integration)', () => {
       expect(
         (await call(m.manifestApi, null, { query: { portal: slugB } })).status
       ).toBe(404);
+    });
+  });
+
+  // =========================================================================
+  describe('portal dashboard and address check', () => {
+    const dash = (as: string, slug = slugA, days = '30') =>
+      call(m.dashboardApi, as, { query: { slug, days } });
+
+    it('shows the numbers the member is allowed to see', async () => {
+      const owner = await dash('ownerA');
+
+      expect(owner.status).toBe(200);
+      expect(owner.json.data.kpis.activeJobs).toBe(3);
+      expect(owner.json.data.kpis.applications).toBeGreaterThanOrEqual(3);
+      expect(owner.json.data.funnel.map((f: { key: string }) => f.key)).toEqual(
+        ['applied', 'screened', 'interviewed', 'offer', 'hired']
+      );
+      expect(owner.json.data.funnel[0].value).toBe(
+        owner.json.data.kpis.applications
+      );
+
+      // a recruiter assigned to one job sees only that job's applications
+      const rec = await dash('recA');
+
+      expect(rec.json.data.kpis.activeJobs).toBe(1);
+      expect(rec.json.data.kpis.applications).toBeLessThan(
+        owner.json.data.kpis.applications
+      );
+      expect((await dash('rec2A')).json.data.kpis).toMatchObject({
+        activeJobs: 0,
+        applications: 0,
+      });
+    });
+
+    it('lists jobs that need attention and recent notifications', async () => {
+      const r = await dash('ownerA');
+
+      expect(Array.isArray(r.json.data.attention)).toBe(true);
+      expect(Array.isArray(r.json.data.notifications)).toBe(true);
+    });
+
+    it('validates the range and keeps portals apart', async () => {
+      expect((await dash('ownerA', slugA, '45')).status).toBe(422);
+      expect((await dash('ownerB', slugA)).status).toBe(403);
+      expect(
+        (await call(m.dashboardApi, null, { query: { slug: slugA } })).status
+      ).toBe(401);
+    });
+
+    it('tells a signed-in user whether a portal address is free', async () => {
+      const check = (slug: string, as: string | null = 'recA') =>
+        call(m.slugCheckApi, as, { query: { slug } });
+
+      expect((await check(slugA)).json.data).toEqual({
+        slug: slugA,
+        available: false,
+      });
+      expect((await check(`free-${run}-name`)).json.data.available).toBe(true);
+      expect((await check('ab')).json.data.available).toBe(false); // too short
+      expect((await check('Some Name!!')).json.data.slug).toBe('some-name');
+      expect((await check(slugA, null)).status).toBe(401);
     });
   });
 });

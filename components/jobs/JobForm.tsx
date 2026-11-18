@@ -240,9 +240,9 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
   const status = job?.status;
 
   return (
-    <div className="space-y-6">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
       {job && (
-        <Card>
+        <Card className="lg:col-span-2">
           <Card.Body>
             <div className="flex flex-wrap items-center gap-2">
               <span className="badge badge-lg">{job.effectiveStatus}</span>
@@ -324,346 +324,356 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
         </Card>
       )}
 
-      <Card>
-        <Card.Body>
-          <Card.Header>
-            <Card.Title>{t('job-details', 'Job details')}</Card.Title>
-          </Card.Header>
-          <InputWithLabel
-            name="title"
-            label={t('title', 'Title')}
-            value={f.title}
-            onChange={(e) => set('title', e.target.value)}
-          />
-          {can('ai.use') && (
-            <JobDescriptionAI
-              slug={slug}
-              title={f.title}
-              skills={f.requiredSkills
-                .split(',')
-                .map((x) => x.trim())
-                .filter(Boolean)}
-              workMode={f.workMode}
-              onApply={(html) => set('descriptionHtml', html)}
-            />
-          )}
-          <label className="flex flex-col w-full">
-            <span className="text-sm pb-2">
-              {t('job-description', 'Description (basic HTML allowed)')}
-            </span>
-            <textarea
-              name="descriptionHtml"
-              className="textarea "
-              rows={8}
-              value={f.descriptionHtml}
-              onChange={(e) => set('descriptionHtml', e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col w-full">
-            <span className="text-sm pb-2">
-              {t('responsibilities', 'Responsibilities (one per line)')}
-            </span>
-            <textarea
-              name="responsibilities"
-              className="textarea "
-              rows={4}
-              value={f.responsibilities}
-              onChange={(e) => set('responsibilities', e.target.value)}
-            />
-          </label>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Select
-              label={t('employment-type', 'Employment type')}
-              name="employmentType"
-              value={f.employmentType}
-              onChange={(v) => set('employmentType', v)}
-              options={[
-                'FULL_TIME',
-                'PART_TIME',
-                'CONTRACT',
-                'INTERNSHIP',
-                'TEMPORARY',
-              ]}
-            />
-            <Select
-              label={t('work-mode', 'Work mode')}
-              name="workMode"
-              value={f.workMode}
-              onChange={(v) => set('workMode', v)}
-              options={['ONSITE', 'HYBRID', 'REMOTE']}
-            />
-            <Select
-              label={t('visibility', 'Visibility')}
-              name="visibility"
-              value={f.visibility}
-              onChange={(v) => set('visibility', v)}
-              options={['PUBLIC', 'UNLISTED', 'INTERNAL']}
-            />
+      <div className="min-w-0 space-y-6">
+        <Card>
+          <Card.Body>
+            <Card.Header>
+              <Card.Title>{t('job-details', 'Job details')}</Card.Title>
+            </Card.Header>
             <InputWithLabel
-              name="experienceMin"
-              type="number"
-              label={t('experience-min', 'Min experience (years)')}
-              value={f.experienceMin}
-              onChange={(e) => set('experienceMin', e.target.value)}
+              name="title"
+              label={t('title', 'Title')}
+              value={f.title}
+              onChange={(e) => set('title', e.target.value)}
             />
-            <InputWithLabel
-              name="experienceMax"
-              type="number"
-              label={t('experience-max', 'Max experience (years)')}
-              value={f.experienceMax}
-              onChange={(e) => set('experienceMax', e.target.value)}
-            />
-            <InputWithLabel
-              name="vacancies"
-              type="number"
-              label={t('vacancies', 'Vacancies')}
-              value={f.vacancies}
-              onChange={(e) => set('vacancies', e.target.value)}
-            />
-            <InputWithLabel
-              name="salaryMin"
-              type="number"
-              label={t('salary-min', 'Salary min (per year)')}
-              value={f.salaryMin}
-              onChange={(e) => set('salaryMin', e.target.value)}
-            />
-            <InputWithLabel
-              name="salaryMax"
-              type="number"
-              label={t('salary-max', 'Salary max (per year)')}
-              value={f.salaryMax}
-              onChange={(e) => set('salaryMax', e.target.value)}
-            />
-            <InputWithLabel
-              name="salaryCurrency"
-              label={t('currency', 'Currency')}
-              value={f.salaryCurrency}
-              onChange={(e) =>
-                set('salaryCurrency', e.target.value.toUpperCase().slice(0, 3))
-              }
-            />
-            <InputWithLabel
-              name="department"
-              label={t('department', 'Department')}
-              value={f.department}
-              onChange={(e) => set('department', e.target.value)}
-            />
-            <InputWithLabel
-              name="industry"
-              label={t('portal-industry')}
-              value={f.industry}
-              onChange={(e) => set('industry', e.target.value)}
-            />
-            <InputWithLabel
-              name="education"
-              label={t('education', 'Education')}
-              value={f.education}
-              onChange={(e) => set('education', e.target.value)}
-            />
-            <InputWithLabel
-              name="closesAt"
-              type="date"
-              label={t('closes-at', 'Closing date')}
-              value={f.closesAt}
-              onChange={(e) => set('closesAt', e.target.value)}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={f.salaryVisible}
-              onChange={(e) => set('salaryVisible', e.target.checked)}
-            />
-            {t('salary-visible', 'Show salary on the public job page')}
-          </label>
-          <InputWithLabel
-            name="benefits"
-            label={t('benefits', 'Benefits (comma separated)')}
-            value={f.benefits}
-            onChange={(e) => set('benefits', e.target.value)}
-          />
-          <InputWithLabel
-            name="requiredSkills"
-            label={t('required-skills', 'Required skills (comma separated)')}
-            value={f.requiredSkills}
-            onChange={(e) => set('requiredSkills', e.target.value)}
-          />
-          <InputWithLabel
-            name="optionalSkills"
-            label={t(
-              'optional-skills',
-              'Nice-to-have skills (comma separated)'
-            )}
-            value={f.optionalSkills}
-            onChange={(e) => set('optionalSkills', e.target.value)}
-          />
-        </Card.Body>
-      </Card>
-
-      <Card>
-        <Card.Body>
-          <Card.Header>
-            <Card.Title>{t('locations', 'Locations')}</Card.Title>
-          </Card.Header>
-          {f.locations.map((l, i) => (
-            <div key={i} className="flex flex-wrap gap-2">
-              {(['city', 'region', 'country'] as const).map((k) => (
-                <input
-                  key={k}
-                  className="input  input-sm"
-                  placeholder={k}
-                  aria-label={`${k} ${i + 1}`}
-                  value={l[k]}
-                  onChange={(e) =>
-                    set(
-                      'locations',
-                      f.locations.map((x, j) =>
-                        j === i ? { ...x, [k]: e.target.value } : x
-                      )
-                    )
-                  }
-                />
-              ))}
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                onClick={() =>
-                  set(
-                    'locations',
-                    f.locations.filter((_, j) => j !== i)
-                  )
-                }
-              >
-                {t('remove')}
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="btn btn-sm w-fit"
-            onClick={() =>
-              set('locations', [
-                ...f.locations,
-                { city: '', region: '', country: '' },
-              ])
-            }
-          >
-            {t('add-location', 'Add location')}
-          </button>
-        </Card.Body>
-      </Card>
-
-      <Card>
-        <Card.Body>
-          <Card.Header>
-            <Card.Title>
-              {t('screening-questions', 'Screening questions')}
-            </Card.Title>
-          </Card.Header>
-          {f.questions.map((q, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2">
-              <select
-                className="select  select-sm"
-                aria-label={`type ${i + 1}`}
-                value={q.type}
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">
+                {t('job-description', 'Description (basic HTML allowed)')}
+              </span>
+              <textarea
+                name="descriptionHtml"
+                className="textarea "
+                rows={8}
+                value={f.descriptionHtml}
+                onChange={(e) => set('descriptionHtml', e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">
+                {t('responsibilities', 'Responsibilities (one per line)')}
+              </span>
+              <textarea
+                name="responsibilities"
+                className="textarea "
+                rows={4}
+                value={f.responsibilities}
+                onChange={(e) => set('responsibilities', e.target.value)}
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Select
+                label={t('employment-type', 'Employment type')}
+                name="employmentType"
+                value={f.employmentType}
+                onChange={(v) => set('employmentType', v)}
+                options={[
+                  'FULL_TIME',
+                  'PART_TIME',
+                  'CONTRACT',
+                  'INTERNSHIP',
+                  'TEMPORARY',
+                ]}
+              />
+              <Select
+                label={t('work-mode', 'Work mode')}
+                name="workMode"
+                value={f.workMode}
+                onChange={(v) => set('workMode', v)}
+                options={['ONSITE', 'HYBRID', 'REMOTE']}
+              />
+              <Select
+                label={t('visibility', 'Visibility')}
+                name="visibility"
+                value={f.visibility}
+                onChange={(v) => set('visibility', v)}
+                options={['PUBLIC', 'UNLISTED', 'INTERNAL']}
+              />
+              <InputWithLabel
+                name="experienceMin"
+                type="number"
+                label={t('experience-min', 'Min experience (years)')}
+                value={f.experienceMin}
+                onChange={(e) => set('experienceMin', e.target.value)}
+              />
+              <InputWithLabel
+                name="experienceMax"
+                type="number"
+                label={t('experience-max', 'Max experience (years)')}
+                value={f.experienceMax}
+                onChange={(e) => set('experienceMax', e.target.value)}
+              />
+              <InputWithLabel
+                name="vacancies"
+                type="number"
+                label={t('vacancies', 'Vacancies')}
+                value={f.vacancies}
+                onChange={(e) => set('vacancies', e.target.value)}
+              />
+              <InputWithLabel
+                name="salaryMin"
+                type="number"
+                label={t('salary-min', 'Salary min (per year)')}
+                value={f.salaryMin}
+                onChange={(e) => set('salaryMin', e.target.value)}
+              />
+              <InputWithLabel
+                name="salaryMax"
+                type="number"
+                label={t('salary-max', 'Salary max (per year)')}
+                value={f.salaryMax}
+                onChange={(e) => set('salaryMax', e.target.value)}
+              />
+              <InputWithLabel
+                name="salaryCurrency"
+                label={t('currency', 'Currency')}
+                value={f.salaryCurrency}
                 onChange={(e) =>
                   set(
-                    'questions',
-                    f.questions.map((x, j) =>
-                      j === i
-                        ? { ...x, type: e.target.value as Question['type'] }
-                        : x
-                    )
-                  )
-                }
-              >
-                {['TEXT', 'SINGLE', 'MULTI', 'NUMBER', 'BOOLEAN'].map((x) => (
-                  <option key={x}>{x}</option>
-                ))}
-              </select>
-              <input
-                className="input  input-sm min-w-[16rem] flex-1"
-                placeholder="Question"
-                aria-label={`question ${i + 1}`}
-                value={q.prompt}
-                onChange={(e) =>
-                  set(
-                    'questions',
-                    f.questions.map((x, j) =>
-                      j === i ? { ...x, prompt: e.target.value } : x
-                    )
+                    'salaryCurrency',
+                    e.target.value.toUpperCase().slice(0, 3)
                   )
                 }
               />
-              {(q.type === 'SINGLE' || q.type === 'MULTI') && (
-                <input
-                  className="input  input-sm"
-                  placeholder="Options, comma separated"
-                  aria-label={`options ${i + 1}`}
-                  value={q.options}
-                  onChange={(e) =>
-                    set(
-                      'questions',
-                      f.questions.map((x, j) =>
-                        j === i ? { ...x, options: e.target.value } : x
-                      )
-                    )
-                  }
-                />
-              )}
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-sm"
-                  checked={q.required}
-                  onChange={(e) =>
-                    set(
-                      'questions',
-                      f.questions.map((x, j) =>
-                        j === i ? { ...x, required: e.target.checked } : x
-                      )
-                    )
-                  }
-                />
-                {t('required', 'Required')}
-              </label>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                onClick={() =>
-                  set(
-                    'questions',
-                    f.questions.filter((_, j) => j !== i)
-                  )
-                }
-              >
-                {t('remove')}
-              </button>
+              <InputWithLabel
+                name="department"
+                label={t('department', 'Department')}
+                value={f.department}
+                onChange={(e) => set('department', e.target.value)}
+              />
+              <InputWithLabel
+                name="industry"
+                label={t('portal-industry')}
+                value={f.industry}
+                onChange={(e) => set('industry', e.target.value)}
+              />
+              <InputWithLabel
+                name="education"
+                label={t('education', 'Education')}
+                value={f.education}
+                onChange={(e) => set('education', e.target.value)}
+              />
+              <InputWithLabel
+                name="closesAt"
+                type="date"
+                label={t('closes-at', 'Closing date')}
+                value={f.closesAt}
+                onChange={(e) => set('closesAt', e.target.value)}
+              />
             </div>
-          ))}
-          <button
-            type="button"
-            className="btn btn-sm w-fit"
-            onClick={() =>
-              set('questions', [
-                ...f.questions,
-                { type: 'TEXT', prompt: '', options: '', required: false },
-              ])
-            }
-          >
-            {t('add-question', 'Add question')}
-          </button>
-        </Card.Body>
-      </Card>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                checked={f.salaryVisible}
+                onChange={(e) => set('salaryVisible', e.target.checked)}
+              />
+              {t('salary-visible', 'Show salary on the public job page')}
+            </label>
+            <InputWithLabel
+              name="benefits"
+              label={t('benefits', 'Benefits (comma separated)')}
+              value={f.benefits}
+              onChange={(e) => set('benefits', e.target.value)}
+            />
+            <InputWithLabel
+              name="requiredSkills"
+              label={t('required-skills', 'Required skills (comma separated)')}
+              value={f.requiredSkills}
+              onChange={(e) => set('requiredSkills', e.target.value)}
+            />
+            <InputWithLabel
+              name="optionalSkills"
+              label={t(
+                'optional-skills',
+                'Nice-to-have skills (comma separated)'
+              )}
+              value={f.optionalSkills}
+              onChange={(e) => set('optionalSkills', e.target.value)}
+            />
+          </Card.Body>
+        </Card>
 
-      {(!jobId || can('jobs.update')) && (
-        <Button color="primary" loading={saving} onClick={save}>
-          {t('save-changes')}
-        </Button>
+        <Card>
+          <Card.Body>
+            <Card.Header>
+              <Card.Title>{t('locations', 'Locations')}</Card.Title>
+            </Card.Header>
+            {f.locations.map((l, i) => (
+              <div key={i} className="flex flex-wrap gap-2">
+                {(['city', 'region', 'country'] as const).map((k) => (
+                  <input
+                    key={k}
+                    className="input  input-sm"
+                    placeholder={k}
+                    aria-label={`${k} ${i + 1}`}
+                    value={l[k]}
+                    onChange={(e) =>
+                      set(
+                        'locations',
+                        f.locations.map((x, j) =>
+                          j === i ? { ...x, [k]: e.target.value } : x
+                        )
+                      )
+                    }
+                  />
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() =>
+                    set(
+                      'locations',
+                      f.locations.filter((_, j) => j !== i)
+                    )
+                  }
+                >
+                  {t('remove')}
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-sm w-fit"
+              onClick={() =>
+                set('locations', [
+                  ...f.locations,
+                  { city: '', region: '', country: '' },
+                ])
+              }
+            >
+              {t('add-location', 'Add location')}
+            </button>
+          </Card.Body>
+        </Card>
+
+        <Card>
+          <Card.Body>
+            <Card.Header>
+              <Card.Title>
+                {t('screening-questions', 'Screening questions')}
+              </Card.Title>
+            </Card.Header>
+            {f.questions.map((q, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <select
+                  className="select  select-sm"
+                  aria-label={`type ${i + 1}`}
+                  value={q.type}
+                  onChange={(e) =>
+                    set(
+                      'questions',
+                      f.questions.map((x, j) =>
+                        j === i
+                          ? { ...x, type: e.target.value as Question['type'] }
+                          : x
+                      )
+                    )
+                  }
+                >
+                  {['TEXT', 'SINGLE', 'MULTI', 'NUMBER', 'BOOLEAN'].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </select>
+                <input
+                  className="input  input-sm min-w-[16rem] flex-1"
+                  placeholder="Question"
+                  aria-label={`question ${i + 1}`}
+                  value={q.prompt}
+                  onChange={(e) =>
+                    set(
+                      'questions',
+                      f.questions.map((x, j) =>
+                        j === i ? { ...x, prompt: e.target.value } : x
+                      )
+                    )
+                  }
+                />
+                {(q.type === 'SINGLE' || q.type === 'MULTI') && (
+                  <input
+                    className="input  input-sm"
+                    placeholder="Options, comma separated"
+                    aria-label={`options ${i + 1}`}
+                    value={q.options}
+                    onChange={(e) =>
+                      set(
+                        'questions',
+                        f.questions.map((x, j) =>
+                          j === i ? { ...x, options: e.target.value } : x
+                        )
+                      )
+                    }
+                  />
+                )}
+                <label className="flex items-center gap-1 text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={q.required}
+                    onChange={(e) =>
+                      set(
+                        'questions',
+                        f.questions.map((x, j) =>
+                          j === i ? { ...x, required: e.target.checked } : x
+                        )
+                      )
+                    }
+                  />
+                  {t('required', 'Required')}
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() =>
+                    set(
+                      'questions',
+                      f.questions.filter((_, j) => j !== i)
+                    )
+                  }
+                >
+                  {t('remove')}
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-sm w-fit"
+              onClick={() =>
+                set('questions', [
+                  ...f.questions,
+                  { type: 'TEXT', prompt: '', options: '', required: false },
+                ])
+              }
+            >
+              {t('add-question', 'Add question')}
+            </button>
+          </Card.Body>
+        </Card>
+
+        {(!jobId || can('jobs.update')) && (
+          <Button color="primary" loading={saving} onClick={save}>
+            {t('save-changes')}
+          </Button>
+        )}
+
+        {jobId && can('jobs.update') && (
+          <Assignments slug={slug} jobId={jobId} />
+        )}
+      </div>
+
+      {can('ai.use') && (
+        <aside className="lg:sticky lg:top-24">
+          <JobDescriptionAI
+            slug={slug}
+            title={f.title}
+            skills={f.requiredSkills
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean)}
+            workMode={f.workMode}
+            onApply={(html) => set('descriptionHtml', html)}
+          />
+        </aside>
       )}
-
-      {jobId && can('jobs.update') && <Assignments slug={slug} jobId={jobId} />}
     </div>
   );
 };

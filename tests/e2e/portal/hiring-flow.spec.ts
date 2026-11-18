@@ -59,7 +59,7 @@ test('set up a portal, a published job, an application and a hiring team', async
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create portal' }).click();
-  await page.waitForURL(`/teams/${slug}/settings`);
+  await page.waitForURL(`/teams/${slug}/dashboard`);
 
   const team = await prisma.team.findUniqueOrThrow({ where: { slug } });
   for (const p of Object.values(people)) {

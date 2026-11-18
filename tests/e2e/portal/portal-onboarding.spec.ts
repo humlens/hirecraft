@@ -26,7 +26,7 @@ test('Owner creates a branded portal through the onboarding wizard', async ({
   const loginPage = new LoginPage(page);
   await loginPage.goto();
   await loginPage.credentialLogin(user.email, user.password);
-  await page.waitForURL(/\/teams\/.+\/settings/);
+  await page.waitForURL(/\/teams\/.+\/(settings|dashboard)/);
 
   await page.goto('/onboarding');
   // 1. Account
@@ -42,7 +42,7 @@ test('Owner creates a branded portal through the onboarding wizard', async ({
   // 4. Done
   await page.getByRole('button', { name: 'Create portal' }).click();
 
-  await page.waitForURL(`/teams/${portal.slug}/settings`);
+  await page.waitForURL(`/teams/${portal.slug}/dashboard`);
 
   // Creator is the Portal Owner (one transaction: team + owner + roles).
   const team = await prisma.team.findUniqueOrThrow({
@@ -60,9 +60,14 @@ test('Owner creates a branded portal through the onboarding wizard', async ({
   expect(team.portalProfile?.companyName).toBe(portal.name);
   expect(team.portalBranding?.heroTitle).toBe('Build the future with us');
 
-  // Portal + Roles tabs exist for the owner
-  await expect(page.getByRole('link', { name: 'Portal' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Roles' })).toBeVisible();
+  // Portal (under More) and Team (members and roles) exist for the owner
+  await page.getByRole('button', { name: 'More' }).click();
+  await expect(
+    page.getByRole('link', { name: 'Portal & branding' })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Team', exact: true })
+  ).toBeVisible();
 });
 
 test('Owner edits branding and sees the permission matrix', async ({
@@ -71,7 +76,7 @@ test('Owner edits branding and sees the permission matrix', async ({
   const loginPage = new LoginPage(page);
   await loginPage.goto();
   await loginPage.credentialLogin(user.email, user.password);
-  await page.waitForURL(/\/teams\/.+\/settings/);
+  await page.waitForURL(/\/teams\/.+\/(settings|dashboard)/);
 
   await page.goto(`/teams/${portal.slug}/portal`);
   await page.getByLabel('Hero subtitle').fill('Open roles in engineering');
@@ -98,7 +103,7 @@ test('Owner invites a recruiter who then has only recruiter permissions', async 
   const loginPage = new LoginPage(page);
   await loginPage.goto();
   await loginPage.credentialLogin(user.email, user.password);
-  await page.waitForURL(/\/teams\/.+\/settings/);
+  await page.waitForURL(/\/teams\/.+\/(settings|dashboard)/);
 
   await page.goto(`/teams/${portal.slug}/members`);
   await expect(page.getByRole('cell', { name: 'Portal Owner' })).toBeVisible();
