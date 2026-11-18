@@ -153,3 +153,53 @@ Tenant-guarded (teamId required on every query): `Job`, `JobSkill`, `JobLocation
 `JobApplication`, `ApplicationActivity` (also append-only), `CandidateConsent`.
 `CandidateProfile`, its children, `CandidateResume` and `SavedJob` belong to a user,
 not a tenant.
+
+## Phase 3: talent, interviews, offers, messages, automation
+
+```mermaid
+erDiagram
+  TenantCandidate ||--o{ CandidateNote : has
+  TenantCandidate ||--o{ CandidateTagLink : tagged
+  CandidateTag ||--o{ CandidateTagLink : "in"
+  TenantCandidate ||--o{ TalentPoolMember : "member of"
+  TalentPool ||--o{ TalentPoolMember : has
+  TenantCandidate }o--o| TenantCandidate : "mergedIntoId"
+  JobApplication ||--o{ Interview : has
+  Interview ||--o{ InterviewParticipant : "taken by"
+  Interview ||--o{ InterviewFeedback : "scorecards (one per participant)"
+  Interview ||--o{ InterviewReminder : "24h / 1h markers"
+  JobApplication ||--o{ Offer : has
+  Offer ||--o{ OfferApproval : "chain, per round"
+  JobApplication ||--o{ MessageDraft : "emails to the candidate"
+  Team ||--o{ AutomationRule : has
+  User ||--o{ Notification : receives
+  User ||--o{ NotificationPreference : sets
+
+  Offer {
+    OfferStatus status "DRAFT PENDING_APPROVAL APPROVED SENT ACCEPTED DECLINED EXPIRED"
+    int round "increments on each submission"
+    int fixed
+    datetime expiresAt
+  }
+  OfferApproval {
+    int round
+    int order "sequential"
+    ApprovalStatus status "PENDING APPROVED REJECTED"
+  }
+  MessageDraft {
+    MessageStatus status "DRAFT APPROVED SENT DISCARDED"
+    MessageKind kind
+    boolean createdByAi
+    string approvedById
+    datetime sentAt "also the send claim"
+  }
+  InterviewFeedback {
+    json scores "competency -> 1..4"
+    Recommendation recommendation
+  }
+  AutomationRule {
+    json trigger "APPLICATION_CREATED | STAGE_ENTERED"
+    json action "CREATE_MESSAGE_DRAFT | NOTIFY_USERS | ADD_TAG"
+    boolean requiresApproval
+  }
+```

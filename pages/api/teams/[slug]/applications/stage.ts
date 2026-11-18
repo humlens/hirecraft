@@ -7,6 +7,7 @@ import {
   validateWithSchema,
 } from '@/lib/zod';
 import { moveApplicationStage } from 'models/application';
+import { onStageChanged } from 'models/hooks';
 import { sendAudit } from '@/lib/retraced';
 import { sendEvent } from '@/lib/svix';
 import { recordMetric } from '@/lib/metrics';
@@ -92,6 +93,16 @@ async function move(
   if (result.to.kind === 'HIRED') {
     await sendEvent(ctx.team.id, 'candidate.hired', { ...result });
   }
+
+  await onStageChanged({
+    teamId: ctx.team.id,
+    teamSlug: ctx.team.slug,
+    applicationId: result.applicationId,
+    jobId: result.jobId,
+    stageId: result.to.id,
+    stageName: result.to.name,
+    actorUserId: ctx.user.id,
+  });
 
   recordMetric('application.stage_changed');
 

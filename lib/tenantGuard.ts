@@ -19,6 +19,19 @@ export const TENANT_MODELS = new Set<string>([
   'JobApplication',
   'ApplicationActivity',
   'CandidateConsent',
+  'CandidateNote',
+  'CandidateTag',
+  'CandidateTagLink',
+  'TalentPool',
+  'TalentPoolMember',
+  'Interview',
+  'InterviewParticipant',
+  'InterviewFeedback',
+  'InterviewReminder',
+  'Offer',
+  'OfferApproval',
+  'MessageDraft',
+  'AutomationRule',
 ]);
 
 /** Rows that may be created but never changed or removed by the app. */

@@ -127,3 +127,35 @@ Role consequences: a **Recruiter** can create, edit and publish their own jobs a
 move candidates, but cannot archive/delete jobs; a **Viewer** can read jobs and
 applications but not change anything; **Hiring Manager** and **Interviewer** can read
 applications of their assigned jobs only.
+
+## Phase 3 endpoints
+
+| Endpoint                                                                                 | Permission / rule                                                                                                                                   |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET .../talent`, `.../talent/[id]`, `.../talent/tags`, `.../talent/pools`               | `candidates.read` or `candidates.search`; visibility rules (see architecture section 15); assignment-scoped roles see only applicants of their jobs |
+| `POST .../talent/[id]/notes`, `PUT .../talent/[id]/tags`, pools create/delete/membership | `candidates.update`                                                                                                                                 |
+| `POST .../talent/import`                                                                 | `candidates.import` (max 1000 rows / 1 MB)                                                                                                          |
+| `GET .../talent/export`                                                                  | `candidates.export`, rate-limited, audited                                                                                                          |
+| `GET .../talent/duplicates`, `POST .../talent/merge`                                     | `candidates.update`                                                                                                                                 |
+| `GET/POST .../applications/[id]/interviews`                                              | `interviews.manage` (+ job scope)                                                                                                                   |
+| `GET .../interviews`, `GET .../interviews/[id]`                                          | `interviews.manage` (jobs in scope) or `feedback.submit` (own interviews only)                                                                      |
+| `PUT .../interviews/[id]` (reschedule / cancel / status)                                 | `interviews.manage`                                                                                                                                 |
+| `PUT .../interviews/[id]/feedback`                                                       | `feedback.submit` and participant of that interview                                                                                                 |
+| `GET/POST .../offers`, `PUT .../offers/[id]`                                             | `offers.manage`; `GET` also for the approvers of that offer                                                                                         |
+| `POST .../offers/[id]/actions` `submit` / `send`                                         | `offers.manage`                                                                                                                                     |
+| `POST .../offers/[id]/actions` `approve` / `reject`                                      | `offers.approve` and the next pending approver; never the submitter / creator                                                                       |
+| `GET/POST .../messages`, `PUT .../messages/[id]`                                         | `messages.send` (+ job scope)                                                                                                                       |
+| `POST .../messages/[id]/actions` `approve` / `send` / `discard`                          | `messages.send`                                                                                                                                     |
+| `GET .../analytics`                                                                      | `analytics.read`                                                                                                                                    |
+| `GET .../analytics/export`                                                               | `analytics.read` **and** `candidates.export`                                                                                                        |
+| `GET .../people?permission=`                                                             | `interviews.manage` or `offers.manage` (`feedback.submit` / `offers.approve` holders only)                                                          |
+| stages, per-job pipeline, automation rules                                               | `automation.manage`                                                                                                                                 |
+| `GET/POST /api/notifications`, preferences                                               | signed-in user, own rows only                                                                                                                       |
+| `GET /api/candidate/interviews`, `/offers`, `POST /offers/[id]/respond`                  | signed-in candidate, own data only                                                                                                                  |
+| `POST /api/internal/tick`                                                                | `Authorization: Bearer $CRON_SECRET`                                                                                                                |
+
+Role consequences: **Recruiter** schedules interviews and drafts messages for their jobs but cannot
+approve offers, export, or see analytics; **HR Manager** runs the whole ATS (talent, offers,
+messages, analytics, pipeline settings); **Hiring Manager** approves offers they are asked to
+approve and gives interview feedback; **Interviewer** only sees their interviews and submits
+scorecards; **Viewer** can read analytics but not export.

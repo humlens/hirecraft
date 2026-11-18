@@ -15,6 +15,8 @@ const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
       href: '/me/applications',
       label: t('my-applications', 'My applications'),
     },
+    { href: '/me/offers', label: t('my-offers', 'Offers') },
+    { href: '/me/notifications', label: t('notifications', 'Notifications') },
     { href: '/me/profile', label: t('my-profile', 'My profile') },
     { href: '/me/privacy', label: t('my-privacy', 'Privacy') },
   ];

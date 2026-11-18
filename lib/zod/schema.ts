@@ -487,3 +487,206 @@ export const candidateProfileSchema = z.object({
 });
 
 export const savedJobSchema = z.object({ jobId: z.string().min(1).max(64) });
+
+// ---------------------------------------------------------------------------
+// Phase 3
+// ---------------------------------------------------------------------------
+
+const id64 = z.string().min(1).max(64);
+
+export const listCandidatesSchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  tagId: id64.optional(),
+  poolId: id64.optional(),
+  source: z.string().trim().max(30).optional(),
+  cursor: id64.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+
+export const candidateIdSchema = z.object({ candidateId: id64 });
+export const noteSchema = z.object({
+  body: z.string().trim().min(1).max(5000),
+});
+export const setTagsSchema = z.object({
+  tags: z.array(z.string().trim().min(1).max(40)).max(30),
+});
+export const poolSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().max(300).optional(),
+});
+export const poolMemberSchema = z.object({
+  candidateId: id64,
+  member: z.boolean(),
+});
+export const importSchema = z.object({
+  csv: z
+    .string()
+    .min(1)
+    .max(1024 * 1024),
+  poolId: id64.optional(),
+});
+export const mergeSchema = z.object({ sourceId: id64, targetId: id64 });
+
+const isoDate = z.string().datetime();
+
+export const scheduleInterviewSchema = z.object({
+  startsAt: isoDate.transform((v) => new Date(v)),
+  durationMin: z.number().int().min(10).max(480).default(45),
+  location: z.string().trim().max(200).nullable().optional(),
+  meetingUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(500)
+    .refine((u) => /^https?:\/\//i.test(u), 'Meeting link must be http(s)')
+    .nullable()
+    .optional(),
+  participantIds: z.array(id64).min(1).max(10),
+});
+
+export const updateInterviewSchema = z.object({
+  startsAt: isoDate.transform((v) => new Date(v)).optional(),
+  durationMin: z.number().int().min(10).max(480).optional(),
+  location: z.string().trim().max(200).nullable().optional(),
+  meetingUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(500)
+    .refine((u) => /^https?:\/\//i.test(u), 'Meeting link must be http(s)')
+    .nullable()
+    .optional(),
+  participantIds: z.array(id64).min(1).max(10).optional(),
+  status: z.enum(['CANCELLED', 'COMPLETED', 'NO_SHOW']).optional(),
+});
+
+export const interviewIdSchema = z.object({ interviewId: id64 });
+
+export const listInterviewsSchema = z.object({
+  from: isoDate.transform((v) => new Date(v)).optional(),
+  to: isoDate.transform((v) => new Date(v)).optional(),
+  status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
+});
+
+export const feedbackSchema = z.object({
+  scores: z
+    .record(z.string().trim().min(1).max(60), z.number().int().min(1).max(4))
+    .refine(
+      (s) => Object.keys(s).length >= 1 && Object.keys(s).length <= 20,
+      'Score 1 to 20 competencies'
+    ),
+  recommendation: z.enum(['STRONG_HIRE', 'HIRE', 'NO_HIRE', 'STRONG_NO_HIRE']),
+  notes: z.string().trim().max(5000).nullable().optional(),
+});
+
+const money = z.number().int().min(0).max(10_000_000_000);
+
+const offerFields = {
+  fixed: money,
+  variable: money.optional(),
+  joiningBonus: money.optional(),
+  currency: z.string().trim().length(3).toUpperCase().optional(),
+  equityNote: z.string().trim().max(300).nullable().optional(),
+  startDate: isoDate
+    .transform((v) => new Date(v))
+    .nullable()
+    .optional(),
+  expiresAt: isoDate
+    .transform((v) => new Date(v))
+    .nullable()
+    .optional(),
+  terms: z.string().trim().max(5000).nullable().optional(),
+};
+
+export const createOfferSchema = z.object({
+  applicationId: id64,
+  ...offerFields,
+});
+export const updateOfferSchema = z.object(offerFields).partial();
+export const offerIdSchema = z.object({ offerId: id64 });
+export const offerActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('submit'),
+    approverIds: z.array(id64).min(1).max(5),
+  }),
+  z.object({
+    action: z.literal('approve'),
+    comment: z.string().trim().max(500).optional(),
+  }),
+  z.object({
+    action: z.literal('reject'),
+    comment: z.string().trim().max(500).optional(),
+  }),
+  z.object({ action: z.literal('send') }),
+]);
+export const respondOfferSchema = z.object({ accept: z.boolean() });
+
+export const createMessageSchema = z.object({
+  applicationId: id64,
+  kind: z.enum([
+    'INTERVIEW_INVITE',
+    'REJECTION',
+    'OFFER',
+    'STATUS_UPDATE',
+    'CUSTOM',
+  ]),
+  subject: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(10000),
+});
+export const updateMessageSchema = z
+  .object({
+    subject: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(10000),
+  })
+  .partial();
+export const messageIdSchema = z.object({ messageId: id64 });
+export const messageActionSchema = z.object({
+  action: z.enum(['approve', 'send', 'discard']),
+});
+export const listMessagesSchema = z.object({
+  status: z.enum(['DRAFT', 'APPROVED', 'SENT', 'DISCARDED']).optional(),
+  applicationId: id64.optional(),
+});
+
+export const analyticsQuerySchema = z.object({
+  from: isoDate.transform((v) => new Date(v)).optional(),
+  to: isoDate.transform((v) => new Date(v)).optional(),
+  jobId: id64.optional(),
+});
+
+export const createStageSchema = z.object({
+  name: z.string().trim().min(2).max(40),
+  jobId: id64.optional(),
+  afterStageId: id64.optional(),
+});
+export const renameStageSchema = z.object({
+  name: z.string().trim().min(2).max(40),
+});
+export const reorderStagesSchema = z.object({
+  orderedIds: z.array(id64).min(1).max(40),
+  jobId: id64.optional(),
+});
+export const stageIdSchema = z.object({ stageId: id64 });
+export const stagesQuerySchema = z.object({ jobId: id64.optional() });
+export const ruleIdSchema = z.object({ ruleId: id64 });
+
+export const notificationsQuerySchema = z.object({
+  unread: z.enum(['1', 'true']).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  cursor: id64.optional(),
+});
+export const markReadSchema = z.union([
+  z.object({ all: z.literal(true) }),
+  z.object({ ids: z.array(id64).min(1).max(100) }),
+]);
+export const preferencesSchema = z.object({
+  preferences: z
+    .array(
+      z.object({
+        type: z.string().min(1).max(60),
+        inApp: z.boolean(),
+        email: z.boolean(),
+      })
+    )
+    .max(40),
+});

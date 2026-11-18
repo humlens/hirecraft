@@ -63,14 +63,18 @@ model User {
   invalid_login_attempts Int       @default(0)
   lockedAt               DateTime?
 
-  candidateProfile CandidateProfile?
-  tenantCandidates TenantCandidate[]
-  savedJobs        SavedJob[]
-  jobAssignments   JobAssignment[]
-  teamMembers      TeamMember[]
-  accounts         Account[]
-  sessions         Session[]
-  invitations      Invitation[]
+  candidateProfile        CandidateProfile?
+  tenantCandidates        TenantCandidate[]
+  candidateTags           CandidateTag[]
+  talentPools             TalentPool[]
+  savedJobs               SavedJob[]
+  jobAssignments          JobAssignment[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  teamMembers             TeamMember[]
+  accounts                Account[]
+  sessions                Session[]
+  invitations             Invitation[]
 }
 
 enum PortalStatus {
@@ -100,6 +104,8 @@ model Team {
   jobs             Job[]
   pipelineStages   PipelineStage[]
   tenantCandidates TenantCandidate[]
+  candidateTags    CandidateTag[]
+  talentPools      TalentPool[]
 
   @@index([billingId])
 }
@@ -636,12 +642,16 @@ model TenantCandidate {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  team         Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  team         Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   applications JobApplication[]
+  notes        CandidateNote[]
+  tagLinks     CandidateTagLink[]
+  poolMembers  TalentPoolMember[]
 
   @@unique([teamId, email])
   @@index([teamId, userId])
+  @@index([teamId, mergedIntoId])
 }
 
 model SavedJob {
@@ -690,6 +700,9 @@ model JobApplication {
   resume          CandidateResume?      @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   stage           PipelineStage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
   activities      ApplicationActivity[]
+  interviews      Interview[]
+  offers          Offer[]
+  messageDrafts   MessageDraft[]
 
   @@unique([jobId, tenantCandidateId])
   @@index([teamId, jobId, stageId])
@@ -712,4 +725,304 @@ model ApplicationActivity {
   application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([teamId, applicationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: talent database, interviews, offers, messages, notifications,
+// automation
+// ---------------------------------------------------------------------------
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Recommendation {
+  STRONG_HIRE
+  HIRE
+  NO_HIRE
+  STRONG_NO_HIRE
+}
+
+enum OfferStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MessageKind {
+  INTERVIEW_INVITE
+  REJECTION
+  OFFER
+  STATUS_UPDATE
+  CUSTOM
+}
+
+enum MessageStatus {
+  DRAFT
+  APPROVED
+  SENT
+  DISCARDED
+}
+
+model CandidateNote {
+  id                String   @id @default(uuid())
+  teamId            String
+  tenantCandidateId String
+  authorId          String?
+  body              String   @db.Text
+  createdAt         DateTime @default(now())
+
+  tenantCandidate TenantCandidate @relation(fields: [tenantCandidateId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, tenantCandidateId, createdAt])
+}
+
+model CandidateTag {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  team   Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  links  CandidateTagLink[]
+  user   User?              @relation(fields: [userId], references: [id])
+  userId String?
+
+  @@unique([teamId, name])
+}
+
+model CandidateTagLink {
+  id                String   @id @default(uuid())
+  teamId            String
+  tenantCandidateId String
+  tagId             String
+  createdAt         DateTime @default(now())
+
+  tenantCandidate TenantCandidate @relation(fields: [tenantCandidateId], references: [id], onDelete: Cascade)
+  tag             CandidateTag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantCandidateId, tagId])
+  @@index([teamId, tagId])
+}
+
+model TalentPool {
+  id          String   @id @default(uuid())
+  teamId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  team    Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  members TalentPoolMember[]
+  user    User?              @relation(fields: [userId], references: [id])
+  userId  String?
+
+  @@unique([teamId, name])
+}
+
+model TalentPoolMember {
+  id                String   @id @default(uuid())
+  teamId            String
+  poolId            String
+  tenantCandidateId String
+  addedBy           String?
+  createdAt         DateTime @default(now())
+
+  pool            TalentPool      @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  tenantCandidate TenantCandidate @relation(fields: [tenantCandidateId], references: [id], onDelete: Cascade)
+
+  @@unique([poolId, tenantCandidateId])
+  @@index([teamId, tenantCandidateId])
+}
+
+model Interview {
+  id               String          @id @default(uuid())
+  teamId           String
+  applicationId    String
+  round            Int             @default(1)
+  startsAt         DateTime
+  durationMin      Int             @default(45)
+  location         String?
+  meetingUrl       String?
+  calendarEventIds Json?
+  status           InterviewStatus @default(SCHEDULED)
+  createdById      String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  application  JobApplication         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  participants InterviewParticipant[]
+  feedback     InterviewFeedback[]
+  reminders    InterviewReminder[]
+
+  @@index([teamId, startsAt])
+  @@index([teamId, applicationId])
+}
+
+model InterviewParticipant {
+  id          String @id @default(uuid())
+  teamId      String
+  interviewId String
+  userId      String
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewId, userId])
+  @@index([teamId, userId])
+}
+
+model InterviewFeedback {
+  id             String         @id @default(uuid())
+  teamId         String
+  interviewId    String
+  userId         String
+  scores         Json
+  recommendation Recommendation
+  notes          String?        @db.Text
+  submittedAt    DateTime       @default(now())
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewId, userId])
+  @@index([teamId, interviewId])
+}
+
+// Idempotency for reminders: one row per (interview, kind)
+model InterviewReminder {
+  id          String   @id @default(uuid())
+  teamId      String
+  interviewId String
+  kind        String
+  sentAt      DateTime @default(now())
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewId, kind])
+  @@index([teamId])
+}
+
+model Offer {
+  id            String      @id @default(uuid())
+  teamId        String
+  applicationId String
+  fixed         Int
+  variable      Int         @default(0)
+  joiningBonus  Int         @default(0)
+  currency      String      @default("INR")
+  equityNote    String?
+  startDate     DateTime?
+  expiresAt     DateTime?
+  terms         String?     @db.Text
+  status        OfferStatus @default(DRAFT)
+  round         Int         @default(0)
+  createdById   String?
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  application JobApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  approvals   OfferApproval[]
+
+  @@index([teamId, status])
+  @@index([teamId, applicationId])
+}
+
+model OfferApproval {
+  id             String         @id @default(uuid())
+  teamId         String
+  offerId        String
+  approverUserId String
+  round          Int
+  order          Int
+  status         ApprovalStatus @default(PENDING)
+  comment        String?
+  decidedAt      DateTime?
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, round, approverUserId])
+  @@index([teamId, approverUserId, status])
+}
+
+model MessageDraft {
+  id               String        @id @default(uuid())
+  teamId           String
+  applicationId    String?
+  recipientEmail   String
+  recipientName    String?
+  kind             MessageKind
+  subject          String
+  body             String        @db.Text
+  createdById      String?
+  createdByAi      Boolean       @default(false)
+  status           MessageStatus @default(DRAFT)
+  approvedById     String?
+  approvedAt       DateTime?
+  sentAt           DateTime?
+  error            String?
+  automationRuleId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  application JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([teamId, status, createdAt])
+}
+
+model AutomationRule {
+  id               String   @id @default(uuid())
+  teamId           String
+  name             String
+  trigger          Json
+  action           Json
+  requiresApproval Boolean  @default(true)
+  enabled          Boolean  @default(true)
+  createdById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([teamId, enabled])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  teamId    String?
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model NotificationPreference {
+  id     String  @id @default(uuid())
+  userId String
+  type   String
+  inApp  Boolean @default(true)
+  email  Boolean @default(true)
+  push   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
 }

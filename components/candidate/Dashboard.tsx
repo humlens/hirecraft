@@ -1,4 +1,5 @@
 import { useMyProfile, useMySavedJobs } from 'hooks/useCandidate';
+import useApi from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import { ApplicationList } from './Applications';
@@ -7,6 +8,17 @@ const Dashboard = () => {
   const { t } = useTranslation('common');
   const { data: profile } = useMyProfile();
   const { data: saved } = useMySavedJobs();
+  const { data: interviews } = useApi<
+    {
+      id: string;
+      startsAt: string;
+      durationMin: number;
+      location: string | null;
+      meetingUrl: string | null;
+      job: string;
+      portal: string;
+    }[]
+  >('/api/candidate/interviews');
 
   return (
     <div className="space-y-8">
@@ -26,6 +38,33 @@ const Dashboard = () => {
           </Link>
         </p>
       </section>
+
+      {!!interviews?.length && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">
+            {t('upcoming-interviews', 'Upcoming interviews')}
+          </h2>
+          <ul className="space-y-2 text-sm">
+            {interviews.map((i) => (
+              <li key={i.id} className="rounded border p-3">
+                <span className="font-medium">{i.job}</span> - {i.portal}
+                <div>{`${new Date(i.startsAt).toLocaleString()} (${i.durationMin} ${t('minutes-short', 'min')})`}</div>
+                {i.location && <div>{i.location}</div>}
+                {i.meetingUrl && (
+                  <a
+                    className="link"
+                    href={i.meetingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {i.meetingUrl}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">

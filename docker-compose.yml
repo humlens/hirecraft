@@ -34,5 +34,21 @@ services:
       mc anonymous set none local/resumes;
       "
 
+  # Background worker (interview reminders, scheduled jobs, offer expiry).
+  # Start with:  docker compose --profile worker up -d worker
+  worker:
+    image: node:22-alpine
+    profiles: ['worker']
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+    command: node worker/index.js
+    environment:
+      APP_URL: http://host.docker.internal:4002
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET}
+      TICK_SECONDS: 60
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
 volumes:
   minio-data:

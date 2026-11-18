@@ -3,6 +3,7 @@ import { ApiError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
 import { effectiveJobStatus, isPublishable, sanitizeJobHtml } from '@/lib/jobs';
 import { slugify } from '@/lib/slug';
+import { notify } from '@/lib/notifications';
 import type { TenantContext } from '@/lib/tenant';
 import type { z } from 'zod';
 import type { createJobSchema, updateJobSchema } from '@/lib/zod';
@@ -492,6 +493,15 @@ export async function setAssignments(
     throw new ApiError(422, 'Every assignee must be a member of this portal.');
   }
 
+  const before = new Set(
+    (
+      await prisma.jobAssignment.findMany({
+        where: { teamId, jobId },
+        select: { userId: true },
+      })
+    ).map((a) => a.userId)
+  );
+
   await prisma.$transaction(async (tx) => {
     await tx.jobAssignment.deleteMany({ where: { teamId, jobId } });
     await tx.jobAssignment.createMany({
@@ -499,6 +509,20 @@ export async function setAssignments(
       skipDuplicates: true,
     });
   });
+
+  const added = userIds.filter((u) => !before.has(u) && u !== ctx.user.id);
+
+  if (added.length) {
+    const job = await getJobOrThrow(ctx, jobId);
+
+    await notify({
+      userIds: added,
+      teamId,
+      type: 'recruiter.assigned',
+      title: `You were assigned to ${job.title}`,
+      link: `/teams/${ctx.team.slug}/jobs/${jobId}`,
+    });
+  }
 
   return getJob(ctx, jobId);
 }

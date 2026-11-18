@@ -4,7 +4,7 @@ Job-portal SaaS built on the BoxyHQ SaaS Starter Kit. The kit is the **SaaS
 infrastructure layer** (auth, teams, invitations, RBAC, SSO, SCIM, audit logs,
 webhooks, billing); the recruitment platform is its **business domain**.
 
-This document covers Phase 1 (foundation and tenancy) and Phase 2 (recruitment core). Later phases extend it.
+This document covers Phase 1 (foundation and tenancy), Phase 2 (recruitment core) and Phase 3 (advanced ATS). Later phases extend it.
 
 ## 1. Verified facts about the starter kit
 
@@ -298,3 +298,158 @@ Phase 4.
   `middleware.ts` is Phase 6; `/p/**` is public and gets the security headers.
 - **Candidates reading across portals** (their own applications, export, erasure) use
   the explicit `unguardedPrisma` client, always filtered by the caller's user id.
+
+---
+
+# Phase 3: advanced ATS
+
+## 14. Modules added
+
+```
+models/talent.ts       candidate database: visibility, notes, tags, pools, CSV import/export, duplicates, merge
+models/interview.ts    scheduling, participants, scorecards, candidate view
+models/offer.ts        offers, sequential approval chain, send, candidate response
+models/message.ts      message drafts: create / edit / approve / send / discard
+models/analytics.ts    KPIs, funnel, CSV report
+models/stages.ts       custom pipeline stages, per-job pipelines
+models/automation.ts   automation rules + engine
+models/hooks.ts        side effects after an application is created / changes stage
+lib/notifications.ts   notification catalogue, preferences, in-app + email delivery
+lib/ticker.ts          time-based work (scheduled jobs, closing dates, reminders, offer expiry)
+lib/mailer.ts          the only place that sends a candidate-facing email
+lib/csv.ts             CSV parser / writer with formula-injection protection
+lib/apiRoute.ts        method-dispatch helper with the kit's error format
+worker/index.js        calls POST /api/internal/tick on an interval
+```
+
+New tenant-guarded models: `CandidateNote`, `CandidateTag`, `CandidateTagLink`,
+`TalentPool`, `TalentPoolMember`, `Interview`, `InterviewParticipant`,
+`InterviewFeedback`, `InterviewReminder`, `Offer`, `OfferApproval`, `MessageDraft`,
+`AutomationRule`. User-owned (not tenant tables): `Notification`,
+`NotificationPreference`.
+
+## 15. Who can see which candidate
+
+The prompt's rule: _a recruiter can see a candidate only through an application to their
+portal, or through explicit consent to that portal's talent pool._ `visibleCandidateWhere`
+implements it for every candidate query (list, detail, notes, tags, pools, export,
+duplicates, merge):
+
+- **Assignment-scoped roles** (Recruiter, ...) see only applicants of jobs they are
+  assigned to.
+- **Portal-wide roles** see applicants, candidates whose _latest_ `TALENT_POOL` consent for
+  this portal is granted (and not revoked), and candidates the portal imported itself.
+- Merged duplicates are hidden. Consent to portal A never exposes anyone to portal B.
+- The global profile is shown only for candidates that are visible this way.
+
+**CSV import** creates `source = "import"` records. The portal is the controller of that
+data: no consent is recorded, so it is the importing employer's responsibility to have a
+lawful basis (stated in the UI hint and in the privacy docs). Imported records are visible
+to portal-wide roles only.
+
+**Export** needs `candidates.export`, is rate-limited, audited (`candidates.export`),
+`no-store`, and neutralises spreadsheet formulas (`= + - @` get a leading `'`).
+
+**Merge** runs in one transaction: notes, tags, pool memberships and non-conflicting
+applications move to the target; an application to a job the target also applied to stays
+on the (hidden) source record, so nothing is deleted and the unique
+`(jobId, tenantCandidateId)` is respected.
+
+## 16. Interviews and scorecards
+
+- Scheduling needs `interviews.manage`, a job in your assignment scope, an active
+  application, a future start and participants who are members **and** hold
+  `feedback.submit`. It writes an `INTERVIEW` activity and creates an
+  `INTERVIEW_INVITE` **message draft** for the candidate (never sent automatically); the
+  candidate only gets an in-app notification.
+- Interviewers (no `interviews.manage`) see only interviews they take part in; managers see
+  the interviews of their jobs.
+- **Feedback is blind**: you see your own feedback; only managers see everyone's.
+  Feedback is accepted only after the start time, only from participants, scores are
+  integers 1-4 per competency, and the interview becomes `COMPLETED` when every participant
+  has submitted.
+- Rescheduling clears reminder markers, so reminders fire again for the new time.
+
+## 17. Offers and the approval chain
+
+`DRAFT -> PENDING_APPROVAL -> APPROVED -> SENT -> ACCEPTED | DECLINED | EXPIRED`.
+
+- Created and sent by `offers.manage`; one open offer per application.
+- Approvers must hold `offers.approve`; **the submitter and the creator can never approve**
+  (separation of duties). Approval is **sequential**: only the next pending approver can
+  decide, enforced under a row lock so concurrent decisions cannot skip the order.
+- A rejection returns the offer to `DRAFT`; the next submission is a new _round_ and the
+  earlier approvals stay as history.
+- Compensation is visible only to managers and the offer's approvers.
+- Sending creates an already-approved `OFFER` message (the chain is the approval) and
+  delivers it; if delivery fails the offer is still `SENT` (the candidate sees it in the
+  portal) and the message stays approved for retry in Messages.
+- The candidate accepts or declines in their dashboard. Accepting moves the application to
+  the `HIRED` stage in the same transaction (activity + `offer.accepted` / `candidate.hired`
+  events); declining leaves the application open. Answers are serialised with a row lock.
+
+## 18. Human approval of candidate email
+
+Every email to a candidate that matters is a `MessageDraft`: `DRAFT -> APPROVED -> SENT`
+(or `DISCARDED`). Only `DRAFT` text can be edited; approval records who approved; only an
+`APPROVED` message can be sent; sending is claimed atomically (concurrent sends deliver
+once); a delivery failure leaves it `APPROVED` with the error for retry. `lib/mailer.ts`
+refuses to "send" when no SMTP server is configured (503) instead of pretending. Candidate
+notifications (stage changes, interview scheduled/reminders, offer sent) are **in-app
+only**; automation can only create drafts.
+
+## 19. Notifications
+
+Catalogue and defaults in `lib/notifications.ts`; per-user, per-type preferences for in-app
+and email (`/api/notifications/preferences`). Delivered: new application, shortlisted, stage
+change, interview scheduled / reminder (24 h, 1 h) / cancelled, job published / expired,
+recruiter assigned, offer approval requested / sent / accepted / declined, plus
+message-draft-ready. `notify()` never throws. Web Push and SMS are not in this phase
+(Phase 5 / optional provider interface).
+
+## 20. Time-based work: a lightweight worker (deviation)
+
+The prompt specifies Redis + BullMQ for background work. Phase 3's background work is cheap,
+idempotent database work (publish scheduled jobs, close expired ones, interview reminders,
+offer expiry), so it runs as `runDueTasks()` behind `POST /api/internal/tick` (secret
+`CRON_SECRET`), driven by `worker/index.js` (`npm run worker`, a `worker` Procfile entry and
+a compose profile) or any scheduler (Vercel Cron, Kubernetes CronJob). Every step claims its
+row with a conditional update or a unique marker, so overlapping ticks and several workers
+are safe. **BullMQ is introduced in Phase 4** for the work that genuinely needs a queue
+(resume parsing, embeddings, matching).
+
+## 21. Analytics
+
+`GET .../analytics?from&to&jobId` (`analytics.read`; assignment-scoped users are limited to
+their jobs): open jobs, applications in the range, current outcome of those applications
+(hired / rejected / withdrawn / in progress), average days from application to hire
+(`HIRED` stage), offer acceptance rate (accepted / answered), funnel (distinct applications
+that ever reached each stage, by stage name), sources, top jobs, offers and interviews by
+status. The applications CSV needs `analytics.read` **and** `candidates.export`.
+
+## 22. Pipeline and automation settings
+
+`automation.manage`: add, rename, reorder (ACTIVE stages only; Hired / Rejected / Withdrawn
+stay last and cannot be deleted), delete (not while applications are in it, not while a rule
+uses it, never the last active stage). A job can get its own pipeline **before** it has
+applications. Rules are `WHEN` (application created / stage entered) `THEN` (create message
+draft / notify people / add tag): **there is no action that moves or rejects a candidate**
+(so automation can never auto-reject or loop), message rules cannot opt out of approval, and
+a failing rule is recorded and never breaks the operation that triggered it.
+
+## 23. Deviations and assumptions (Phase 3)
+
+- Lightweight worker instead of BullMQ (section 20).
+- Offer templates (`templateId`) are replaced by free-text `terms`; PDF offer letters are out
+  of scope.
+- `OfferApproval` and `Offer` carry a `round`; `InterviewParticipant` and `InterviewReminder`
+  carry `teamId` (guard coverage). `Offer.currency`, `Offer.terms`, `Interview.createdById`
+  and `MessageDraft.recipient*` were added.
+- Calendar events (`calendarEventIds`) and video links are filled by the Phase 6 integrations;
+  the column exists, the meeting link is typed in by hand.
+- Automation `requiresApproval` must be `true` for message actions (auto-sending is not
+  supported). Other actions ignore it.
+- The funnel and hires are computed from stage history / current stage; "hires" counts
+  applications currently in a `HIRED` stage.
+- Notification emails reach staff; SMTP must be configured for any email to go out.
+- SSO/SCIM, billing and API-key screens are unchanged; custom roles are still not plan-gated.

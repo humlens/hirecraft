@@ -77,6 +77,8 @@ const unAuthenticatedRoutes = [
   '/api/candidate/register',
   // Local-disk storage driver (HMAC-signed URLs; S3 in production)
   '/api/storage/local',
+  // Called by the worker / a scheduler; authenticated by CRON_SECRET
+  '/api/internal/tick',
 ];
 
 export default async function middleware(req: NextRequest) {

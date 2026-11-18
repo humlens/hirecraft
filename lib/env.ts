@@ -131,6 +131,9 @@ const env = {
     maxResumeBytes: Number(process.env.MAX_RESUME_BYTES) || 5 * 1024 * 1024,
   },
 
+  // Shared secret for POST /api/internal/tick (worker / scheduler)
+  cronSecret: process.env.CRON_SECRET || '',
+
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
 
   stripe: {

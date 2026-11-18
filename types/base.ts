@@ -61,6 +61,9 @@ export type AppEvent =
   | 'application.withdrawn'
   | 'candidate.hired'
   | 'candidate.registered'
+  | 'interview.scheduled'
+  | 'offer.sent'
+  | 'offer.accepted'
   | 'apikey.created'
   | 'apikey.removed'
   | 'apikey.fetched'
@@ -71,12 +74,7 @@ export type AppEvent =
   | 'webhook.updated';
 
 export type AUTH_PROVIDER =
-  | 'github'
-  | 'google'
-  | 'saml'
-  | 'email'
-  | 'credentials'
-  | 'idp-initiated';
+  'github' | 'google' | 'saml' | 'email' | 'credentials' | 'idp-initiated';
 
 export interface TeamFeature {
   sso: boolean;

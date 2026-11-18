@@ -34,7 +34,23 @@ type EventType =
   | 'job.archive'
   | 'job.delete'
   | 'application.stage_change'
-  | 'resume.download';
+  | 'resume.download'
+  | 'candidates.import'
+  | 'candidates.export'
+  | 'candidate.merge'
+  | 'applications.export'
+  | 'interview.schedule'
+  | 'interview.update'
+  | 'offer.create'
+  | 'offer.submit'
+  | 'offer.approve'
+  | 'offer.reject'
+  | 'offer.send'
+  | 'message.approve'
+  | 'message.send'
+  | 'message.discard'
+  | 'pipeline.update'
+  | 'automation.update';
 
 type Request = {
   action: EventType;

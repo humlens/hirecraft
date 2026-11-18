@@ -9,6 +9,12 @@ import {
   BuildingOffice2Icon,
   ShieldCheckIcon,
   BriefcaseIcon,
+  UsersIcon,
+  CalendarDaysIcon,
+  GiftIcon,
+  EnvelopeIcon,
+  ChartBarIcon,
+  AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
@@ -43,6 +49,60 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
       href: `/teams/${team.slug}/jobs`,
       active: activeTab === 'jobs',
       icon: BriefcaseIcon,
+    });
+  }
+
+  if (canAny('candidates.read', 'candidates.search')) {
+    navigations.push({
+      name: 'Talent',
+      href: `/teams/${team.slug}/talent`,
+      active: activeTab === 'talent',
+      icon: UsersIcon,
+    });
+  }
+
+  if (canAny('interviews.manage', 'feedback.submit')) {
+    navigations.push({
+      name: 'Interviews',
+      href: `/teams/${team.slug}/interviews`,
+      active: activeTab === 'interviews',
+      icon: CalendarDaysIcon,
+    });
+  }
+
+  if (canAny('offers.manage', 'offers.approve')) {
+    navigations.push({
+      name: 'Offers',
+      href: `/teams/${team.slug}/offers`,
+      active: activeTab === 'offers',
+      icon: GiftIcon,
+    });
+  }
+
+  if (can('messages.send')) {
+    navigations.push({
+      name: 'Messages',
+      href: `/teams/${team.slug}/messages`,
+      active: activeTab === 'messages',
+      icon: EnvelopeIcon,
+    });
+  }
+
+  if (can('analytics.read')) {
+    navigations.push({
+      name: 'Analytics',
+      href: `/teams/${team.slug}/analytics`,
+      active: activeTab === 'analytics',
+      icon: ChartBarIcon,
+    });
+  }
+
+  if (can('automation.manage')) {
+    navigations.push({
+      name: 'Pipeline',
+      href: `/teams/${team.slug}/settings/pipeline`,
+      active: activeTab === 'pipeline',
+      icon: AdjustmentsHorizontalIcon,
     });
   }
 

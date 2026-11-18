@@ -6,6 +6,15 @@ import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
+import useApi from 'hooks/useApi';
+import { useState } from 'react';
+import {
+  ScheduleInterview,
+  type InterviewView,
+} from '@/components/interviews/Interviews';
+import { CreateOffer, type OfferView } from '@/components/offers/Offers';
+import { ComposeMessage, MessagesList } from '@/components/messages/Messages';
+import { useRouter } from 'next/router';
 
 type Answer = { questionId: string; prompt: string; value: unknown };
 
@@ -22,6 +31,20 @@ const ApplicationDetail = ({
     applicationId
   );
   const { can } = usePortalAccess(slug);
+  const router = useRouter();
+  const [panel, setPanel] = useState<'interview' | 'offer' | 'message' | null>(
+    null
+  );
+  const interviews = useApi<InterviewView[]>(
+    can('interviews.manage')
+      ? `/api/teams/${slug}/applications/${applicationId}/interviews`
+      : null
+  );
+  const offers = useApi<OfferView[]>(
+    can('offers.manage')
+      ? `/api/teams/${slug}/offers?applicationId=${applicationId}`
+      : null
+  );
 
   if (isLoading) {
     return <Loading />;
@@ -143,6 +166,105 @@ const ApplicationDetail = ({
           </div>
         </Card.Body>
       </Card>
+
+      <Card>
+        <Card.Body>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              className="btn btn-sm"
+              href={`/teams/${slug}/talent/${application.candidate.id}`}
+            >
+              {t('candidate-profile', 'Candidate profile')}
+            </Link>
+            {can('interviews.manage') && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() =>
+                  setPanel(panel === 'interview' ? null : 'interview')
+                }
+              >
+                {t('schedule-interview', 'Schedule interview')}
+              </button>
+            )}
+            {can('offers.manage') && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setPanel(panel === 'offer' ? null : 'offer')}
+              >
+                {t('create-offer', 'Create offer')}
+              </button>
+            )}
+            {can('messages.send') && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setPanel(panel === 'message' ? null : 'message')}
+              >
+                {t('new-message', 'New message draft')}
+              </button>
+            )}
+          </div>
+          {panel === 'interview' && (
+            <ScheduleInterview
+              slug={slug}
+              applicationId={applicationId}
+              onDone={() => {
+                setPanel(null);
+                interviews.refresh();
+                mutateApplication();
+              }}
+            />
+          )}
+          {panel === 'offer' && (
+            <CreateOffer
+              slug={slug}
+              applicationId={applicationId}
+              onDone={(id) => router.push(`/teams/${slug}/offers/${id}`)}
+            />
+          )}
+          {panel === 'message' && (
+            <ComposeMessage
+              slug={slug}
+              applicationId={applicationId}
+              onDone={() => setPanel(null)}
+            />
+          )}
+          {!!interviews.data?.length && (
+            <ul className="text-sm">
+              {interviews.data.map((i) => (
+                <li key={i.id}>
+                  <Link
+                    className="link"
+                    href={`/teams/${slug}/interviews/${i.id}`}
+                  >
+                    {t('round', 'Round')} {i.round}
+                  </Link>{' '}
+                  {new Date(i.startsAt).toLocaleString()}{' '}
+                  <span className="badge badge-sm">{i.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!!offers.data?.length && (
+            <ul className="text-sm">
+              {offers.data.map((o) => (
+                <li key={o.id}>
+                  <Link className="link" href={`/teams/${slug}/offers/${o.id}`}>
+                    {t('offer', 'Offer')}
+                  </Link>{' '}
+                  <span className="badge badge-sm">{o.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card.Body>
+      </Card>
+
+      {can('messages.send') && (
+        <MessagesList slug={slug} applicationId={applicationId} />
+      )}
 
       {answers.length > 0 && (
         <Card>

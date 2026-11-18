@@ -58,3 +58,23 @@ configured).
   scanner (for example ClamAV) with `setUploadScanner` from `lib/uploadValidation.ts`
   before going live.
 - **Scheduled jobs** go live at their `publishAt` without a worker (evaluated when read).
+
+## Background worker (Phase 3)
+
+Interview reminders (24 h / 1 h), scheduled job publishing, closing dates and offer expiry run in
+`runDueTasks()`, exposed as `POST /api/internal/tick` and protected by `CRON_SECRET`.
+
+- Set the **same** `CRON_SECRET` on the web app and on whatever calls it.
+- Run `npm run worker` as a second process (Procfile has a `worker:` entry; for local Docker:
+  `docker compose --profile worker up -d worker`), **or** point any scheduler at the endpoint:
+
+  ```bash
+  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/internal/tick
+  ```
+
+- Ticks are idempotent: every step claims its row (conditional update or unique marker), so
+  overlapping ticks and several workers cannot send duplicate reminders or publish twice.
+- Without a worker the product still works; scheduled jobs are visible at their time
+  (evaluated on read) but reminders and notifications for time-based events are not sent.
+- **Email:** set `SMTP_*`. Without SMTP, approving a message works but sending is refused
+  (503) so nothing is silently dropped.

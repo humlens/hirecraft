@@ -8,6 +8,7 @@ import {
 } from '@/lib/candidateAuth';
 import { applySchema, validateWithSchema } from '@/lib/zod';
 import { applyToJob } from 'models/apply';
+import { onApplicationCreated } from 'models/hooks';
 import { getPublicPortal } from 'models/publicPortal';
 import { sendEvent } from '@/lib/svix';
 import { recordMetric } from '@/lib/metrics';
@@ -47,6 +48,15 @@ export default async function handler(
     });
 
     await sendEvent(portal.team.id, 'application.created', { ...result });
+
+    await onApplicationCreated({
+      teamId: portal.team.id,
+      applicationId: result.applicationId,
+      jobId: result.jobId,
+      jobTitle: result.jobTitle,
+      teamSlug: portal.team.slug,
+      candidateName: user.name,
+    });
 
     recordMetric('application.created');
 
