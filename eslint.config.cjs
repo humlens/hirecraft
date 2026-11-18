@@ -21,11 +21,10 @@ module.exports = [{
         "eslint.config.cjs",
         "next-env.d.ts"
     ],
-}, ...compat.extends(
+}, ...require("eslint-config-next/core-web-vitals"), ...compat.extends(
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier",
-    "next/core-web-vitals",
     "plugin:i18next/recommended",
 ), {
     plugins: {
@@ -44,6 +43,11 @@ module.exports = [{
     },
     rules: {
         "@typescript-eslint/no-explicit-any": "off",
+        // New React Compiler rules from eslint-config-next 16; existing code
+        // predates them, so surface as warnings until refactored.
+        "react-hooks/set-state-in-effect": "warn",
+        "react-hooks/immutability": "warn",
+        "react-hooks/static-components": "warn",
     }
 }, {
     files: ["**/*.js"],
