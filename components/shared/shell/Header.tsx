@@ -3,6 +3,7 @@ import React from 'react';
 import { useSession } from 'next-auth/react';
 import {
   ArrowRightOnRectangleIcon,
+  BellIcon,
   Bars3Icon,
   SunIcon,
   UserCircleIcon,
@@ -12,6 +13,8 @@ import useTheme from 'hooks/useTheme';
 import env from '@/lib/env';
 import { useTranslation } from 'next-i18next';
 import { useCustomSignOut } from 'hooks/useCustomSignout';
+import useSWR from 'swr';
+import fetcher from '@/lib/fetcher';
 
 interface HeaderProps {
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -22,6 +25,12 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
   const { status, data } = useSession();
   const { t } = useTranslation('common');
   const signOut = useCustomSignOut();
+  // unread count for the bell (cheap: one row)
+  const { data: notif } = useSWR<{ data: { unread: number } }>(
+    '/api/notifications?limit=1',
+    fetcher,
+    { refreshInterval: 60000 }
+  );
 
   if (status === 'loading' || !data) {
     return null;
@@ -42,6 +51,18 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         <div className="relative flex flex-1"></div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <Link
+            href="/notifications"
+            className="relative p-1 text-gray-500 hover:text-gray-700 dark:text-gray-50"
+            aria-label={t('notifications', 'Notifications')}
+          >
+            <BellIcon className="h-6 w-6" aria-hidden="true" />
+            {!!notif?.data?.unread && (
+              <span className="badge badge-primary badge-xs absolute -right-1 -top-1">
+                {notif.data.unread > 99 ? '99+' : notif.data.unread}
+              </span>
+            )}
+          </Link>
           <div className="dropdown dropdown-end">
             <div className="flex items-center cursor-pointer" tabIndex={0}>
               <span className="hidden lg:flex lg:items-center">
@@ -59,7 +80,7 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
             </div>
             <ul
               tabIndex={0}
-              className="dropdown-content z-[1] menu p-2 shadow bg-base-100 border rounded w-40 space-y-1"
+              className="dropdown-content z-1 menu p-2 shadow bg-base-100 border rounded w-40 space-y-1"
             >
               <li
                 onClick={() => {

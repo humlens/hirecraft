@@ -9,6 +9,7 @@ import fetcher from '@/lib/fetcher';
 import useCanAccess from 'hooks/useCanAccess';
 import { TeamTab } from '@/components/team';
 import Help from '@/components/billing/Help';
+import PlanOverview from '@/components/billing/PlanOverview';
 import { Error, Loading } from '@/components/shared';
 import LinkToPortal from '@/components/billing/LinkToPortal';
 import Subscriptions from '@/components/billing/Subscriptions';
@@ -48,7 +49,9 @@ const Payments = ({ teamFeatures }) => {
             teamFeatures={teamFeatures}
           />
 
-          <div className="flex gap-6 flex-col md:flex-row">
+          <PlanOverview slug={team.slug} />
+
+          <div className="flex gap-6 flex-col md:flex-row mt-6">
             <LinkToPortal team={team} />
             <Help />
           </div>

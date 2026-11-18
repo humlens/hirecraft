@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import { clearPwaState } from '@/lib/pwa';
 
 export function useCustomSignOut() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function useCustomSignOut() {
         throw new Error('Signout failed');
       }
 
+      await clearPwaState();
       router.push('/auth/login');
     } catch (error) {
       console.error('Error during sign out:', error);

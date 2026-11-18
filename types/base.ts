@@ -48,6 +48,22 @@ export type AppEvent =
   | 'team.created'
   | 'team.updated'
   | 'team.removed'
+  | 'portal.updated'
+  | 'role.created'
+  | 'role.updated'
+  | 'role.removed'
+  | 'job.created'
+  | 'job.updated'
+  | 'job.published'
+  | 'job.closed'
+  | 'application.created'
+  | 'application.stage_changed'
+  | 'application.withdrawn'
+  | 'candidate.hired'
+  | 'candidate.registered'
+  | 'interview.scheduled'
+  | 'offer.sent'
+  | 'offer.accepted'
   | 'apikey.created'
   | 'apikey.removed'
   | 'apikey.fetched'
@@ -58,12 +74,7 @@ export type AppEvent =
   | 'webhook.updated';
 
 export type AUTH_PROVIDER =
-  | 'github'
-  | 'google'
-  | 'saml'
-  | 'email'
-  | 'credentials'
-  | 'idp-initiated';
+  'github' | 'google' | 'saml' | 'email' | 'credentials' | 'idp-initiated';
 
 export interface TeamFeature {
   sso: boolean;

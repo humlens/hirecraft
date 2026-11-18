@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const regExp = /\bt\('(.*?)'/gm;
+// \s* also matches calls that prettier wraps onto several lines: t(\n  'key',
+const regExp = /\bt\(\s*'(.*?)'/gm;
 const altRegExp = /\bi18nKey="(.*?)"/gm;
 // const authLayoutRegExp =
 //   /\bAuthLayout.*\bheading="(.*?)".*\bdescription="(.*?)"/gm;
@@ -41,7 +42,7 @@ files.forEach((file) => {
     );
 
     (fileContent.match(regExp) || []).forEach((match) => {
-      const id = match.replace("t('", '').replace("'", '');
+      const id = match.replace(/^t\(\s*'/, '').replace("'", '');
       allStrings[id] = true;
       if (!localeFile[id]) {
         error = true;

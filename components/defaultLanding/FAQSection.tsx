@@ -1,5 +1,5 @@
 import { useTranslation } from 'next-i18next';
-import { Card } from 'react-daisyui';
+import { Card } from '@/components/ui/daisy';
 
 import faqs from './data/faq.json';
 

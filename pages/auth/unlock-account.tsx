@@ -1,7 +1,7 @@
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import type { GetServerSidePropsContext } from 'next';
 import { useState, type ReactElement, useEffect } from 'react';
-import type { AlertProps } from 'react-daisyui';
+import type { AlertProps } from '@/components/ui/daisy';
 
 type ComponentStatus = NonNullable<AlertProps['status']>;
 import { useTranslation } from 'next-i18next';

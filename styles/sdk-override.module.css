@@ -2,6 +2,7 @@
 .sdk-input:focus,
 .sdk-select:focus-visible + span {
   /* Below styles copied from the tailwindcss/forms plugin */
-  outline: 2px solid oklch(var(--bc) / 0.2);
+  outline: 2px solid
+    color-mix(in oklab, var(--color-base-content) 20%, transparent);
   outline-offset: 2px;
 }

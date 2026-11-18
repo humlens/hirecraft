@@ -7,8 +7,8 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState, type ReactElement, useEffect } from 'react';
-import { Button } from 'react-daisyui';
-import type { AlertProps } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
+import type { AlertProps } from '@/components/ui/daisy';
 
 type ComponentStatus = NonNullable<AlertProps['status']>;
 import { toast } from 'react-hot-toast';

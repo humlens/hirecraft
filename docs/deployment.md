@@ -1,0 +1,102 @@
+# Deployment notes
+
+(Extended in later phases with the worker, Redis, S3 and pgvector.)
+
+## Migrations are the source of truth
+
+`npm run build` previously ran `prisma db push`, which syncs the schema without
+history and can drop data. It now runs **`prisma migrate deploy`**, which applies
+only the committed migrations in `prisma/migrations`.
+
+- New environment: nothing to do, `migrate deploy` creates the schema.
+- **Existing database created with `db push`** (no `_prisma_migrations` table):
+  baseline it once, then deploy normally:
+
+  ```bash
+  # mark every migration that predates this change as already applied
+  for m in $(ls prisma/migrations | grep -v migration_lock | grep -v 20261118000000_portal_foundation); do
+    npx prisma migrate resolve --applied "$m"
+  done
+  npx prisma migrate deploy   # applies 20261118000000_portal_foundation
+  ```
+
+- Every schema change must ship with a migration
+  (`npx prisma migrate dev --name <change>`).
+
+## Build and dev use webpack
+
+Next.js 16 uses Turbopack by default. The app was built and verified with webpack, so
+`dev`, `build` and `build-ci` pass `--webpack`.
+
+## Tests
+
+```bash
+npm test                      # unit tests (no database)
+DATABASE_URL=postgresql://... npm run test:integration   # real PostgreSQL
+npm run test:e2e              # Playwright (needs a running app + database)
+```
+
+The e2e suite runs against `npm run start`. Set `FEATURE_TEAM_WEBHOOK=false`
+unless you have a reachable Svix server (the kit treats a missing Svix key as
+configured).
+
+## Resume storage (Phase 2)
+
+- **Production:** an S3-compatible bucket (private, server-side encryption on). Set
+  `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (and
+  `S3_ENDPOINT` for non-AWS). The app only needs `PutObject`, `GetObject`,
+  `DeleteObject` on the bucket. Downloads use 60-second pre-signed URLs, so the bucket
+  must **not** be public.
+- **Local development:** `docker compose up -d` starts MinIO (console on
+  <http://localhost:9001>, `minioadmin` / `minioadmin`) and creates the `resumes`
+  bucket. Use `S3_ENDPOINT=http://localhost:9000`, `S3_BUCKET=resumes`,
+  `S3_ACCESS_KEY_ID=minioadmin`, `S3_SECRET_ACCESS_KEY=minioadmin`. Without these the
+  app falls back to local disk.
+- **Multiple instances:** the in-memory rate limiter is per process. Put a shared
+  limiter (Redis, planned) or the platform's rate limiting in front for production.
+- **Uploads and the virus scan:** the default scanner allows everything. Register a
+  scanner (for example ClamAV) with `setUploadScanner` from `lib/uploadValidation.ts`
+  before going live.
+- **Scheduled jobs** go live at their `publishAt` without a worker (evaluated when read).
+
+## Background worker (Phase 3)
+
+Interview reminders (24 h / 1 h), scheduled job publishing, closing dates and offer expiry run in
+`runDueTasks()`, exposed as `POST /api/internal/tick` and protected by `CRON_SECRET`.
+
+- Set the **same** `CRON_SECRET` on the web app and on whatever calls it.
+- Run `npm run worker` as a second process (Procfile has a `worker:` entry; for local Docker:
+  `docker compose --profile worker up -d worker`), **or** point any scheduler at the endpoint:
+
+  ```bash
+  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/internal/tick
+  ```
+
+- Ticks are idempotent: every step claims its row (conditional update or unique marker), so
+  overlapping ticks and several workers cannot send duplicate reminders or publish twice.
+- Without a worker the product still works; scheduled jobs are visible at their time
+  (evaluated on read) but reminders and notifications for time-based events are not sent.
+- **Email:** set `SMTP_*`. Without SMTP, approving a message works but sending is refused
+  (503) so nothing is silently dropped.
+
+## AI and the queue (Phase 4)
+
+- Use a PostgreSQL with the `vector` extension (the migration runs `CREATE EXTENSION IF NOT EXISTS vector`).
+- Set at least one provider key, or portals must bring their own.
+- Set `REDIS_URL` and run `npm run worker` to process resume parsing and embeddings off the web process.
+- Keep `AI_KEYS_ENCRYPTION_SECRET` stable: rotating it invalidates saved portal keys.
+
+## Web Push and the PWA (Phase 5)
+
+- Serve over HTTPS (service workers and push need it). Set the VAPID variables to enable push.
+- Do not cache `/sw.js` at a CDN; the app sends `Cache-Control: no-cache` for it.
+- If you front the app with a proxy, forward `/manifest.webmanifest`, `/offline.html` and `/icons/*` unauthenticated.
+
+## Plans, custom domains and admin (Phase 6)
+
+- Set `STRIPE_*` and `metadata.plan` on each Stripe price to enforce plans; add the `invoice.payment_failed` and `invoice.paid`
+  events to the Stripe webhook.
+- Set `PLATFORM_ADMIN_EMAILS` to get `/admin`.
+- Custom domains: set `PORTAL_CNAME_TARGET`, `PUBLIC_PORTAL_BASE_DOMAIN`, `APP_URL` **before building** (the edge middleware
+  inlines them), and run an on-demand-TLS proxy whose `ask` endpoint is `/api/public/domains/resolve`.
+- Calendar integrations need the Google / Microsoft OAuth clients and the redirect URIs listed in `docs/env.md`.

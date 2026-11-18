@@ -4,6 +4,16 @@ import { getSession } from '@/lib/session';
 import { throwIfNoTeamAccess } from 'models/team';
 import { stripe, getStripeCustomerId } from '@/lib/stripe';
 import env from '@/lib/env';
+import { ApiError } from '@/lib/errors';
+import { prisma } from '@/lib/prisma';
+import {
+  checkDowngrade,
+  getPlanState,
+  LIMIT_LABELS,
+  PLAN_LABELS,
+  PLANS,
+} from '@/lib/entitlements';
+import { planOfPrice } from 'models/billingPlan';
 import { checkoutSessionSchema, validateWithSchema } from '@/lib/zod';
 
 export default async function handler(
@@ -25,7 +35,7 @@ export default async function handler(
     const message = error.message || 'Something went wrong';
     const status = error.status || 500;
 
-    res.status(status).json({ error: { message } });
+    res.status(status).json({ error: { message, ...(error.details ?? {}) } });
   }
 }
 
@@ -36,6 +46,32 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   );
 
   const teamMember = await throwIfNoTeamAccess(req, res);
+
+  // a plan below the current one is refused while usage exceeds its limits
+  const target = await prisma.price.findUnique({ where: { id: price } });
+  const targetPlan = planOfPrice(target?.metadata);
+
+  if (targetPlan) {
+    const current = await getPlanState(teamMember.teamId);
+
+    if (PLANS.indexOf(targetPlan) < PLANS.indexOf(current.plan)) {
+      const check = await checkDowngrade(teamMember.teamId, targetPlan);
+
+      if (!check.allowed) {
+        throw new ApiError(
+          409,
+          `You cannot move to ${PLAN_LABELS[targetPlan]} yet: ${check.blockers
+            .map(
+              (b) =>
+                `${b.used} ${LIMIT_LABELS[b.limit]} in use, ${b.allowed} allowed`
+            )
+            .join('; ')}. Close or remove some first.`,
+          { code: 'downgrade_blocked', blockers: check.blockers }
+        );
+      }
+    }
+  }
+
   const session = await getSession(req, res);
   const customer = await getStripeCustomerId(teamMember, session);
 

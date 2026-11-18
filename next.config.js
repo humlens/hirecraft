@@ -5,12 +5,10 @@ const { withSentryConfig } = require('@sentry/nextjs');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // pdf.js loads its worker dynamically: keep these out of the server bundle
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'mammoth'],
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'boxyhq.com',
-      },
       {
         protocol: 'https',
         hostname: 'files.stripe.com',
@@ -32,6 +30,14 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // the service worker must always be revalidated so updates reach users
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, max-age=0' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
       {
         source: '/(.*?)',
         headers: [

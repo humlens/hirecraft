@@ -2,15 +2,18 @@ import { ApiError } from '@/lib/errors';
 import { sendAudit } from '@/lib/retraced';
 import { sendEvent } from '@/lib/svix';
 import { Role } from '@prisma/client';
+import { getTeamMembers } from 'models/team';
+import { requireTenantContext } from '@/lib/tenant';
+import { assertNotLastOwner } from '@/lib/ownerGuard';
 import {
-  getTeamMembers,
-  removeTeamMember,
-  throwIfNoTeamAccess,
-} from 'models/team';
-import { throwIfNotAllowed } from 'models/user';
+  assertCanGrantBaseRole,
+  getEffectivePermissions,
+  assertCanGrant,
+} from '@/lib/authz';
+import { prisma } from '@/lib/prisma';
+import { resolveAssignableRole } from 'models/portalRole';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { recordMetric } from '@/lib/metrics';
-import { countTeamMembers, updateTeamMember } from 'models/teamMember';
 import { validateMembershipOperation } from '@/lib/rbac';
 import {
   deleteMemberSchema,
@@ -48,16 +51,17 @@ export default async function handler(
     const message = error.message || 'Something went wrong';
     const status = error.status || 500;
 
-    res.status(status).json({ error: { message } });
+    res.status(status).json({ error: { message, ...(error.details ?? {}) } });
   }
 }
 
 // Get members of a team
 const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_member', 'read');
+  const ctx = await requireTenantContext(req, res, {
+    anyPermission: ['members.invite', 'members.remove', 'roles.manage'],
+  });
 
-  const members = await getTeamMembers(teamMember.team.slug);
+  const members = await getTeamMembers(ctx.team.slug);
 
   recordMetric('member.fetched');
 
@@ -66,25 +70,37 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
 
 // Delete the member from the team
 const handleDELETE = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_member', 'delete');
+  const ctx = await requireTenantContext(req, res, {
+    permission: 'members.remove',
+  });
 
   const { memberId } = validateWithSchema(
     deleteMemberSchema,
     req.query as { memberId: string }
   );
 
-  await validateMembershipOperation(memberId, teamMember);
+  await assertCanManageTarget(ctx, memberId);
 
-  const teamMemberRemoved = await removeTeamMember(teamMember.teamId, memberId);
+  await validateMembershipOperation(memberId, {
+    ...ctx.member,
+    team: ctx.team,
+  });
 
-  await sendEvent(teamMember.teamId, 'member.removed', teamMemberRemoved);
+  const teamMemberRemoved = await prisma.$transaction(async (tx) => {
+    await assertNotLastOwner(tx, ctx.team.id, memberId);
+
+    return tx.teamMember.delete({
+      where: { teamId_userId: { teamId: ctx.team.id, userId: memberId } },
+    });
+  });
+
+  await sendEvent(ctx.team.id, 'member.removed', teamMemberRemoved);
 
   sendAudit({
     action: 'member.remove',
     crud: 'd',
-    user: teamMember.user,
-    team: teamMember.team,
+    user: ctx.user as never,
+    team: ctx.team,
   });
 
   recordMetric('member.removed');
@@ -94,52 +110,19 @@ const handleDELETE = async (req: NextApiRequest, res: NextApiResponse) => {
 
 // Leave a team
 const handlePUT = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team', 'leave');
-
-  /*
-  Aggregate  (cost=64.62..64.63 rows=1 width=8) (actual time=0.222..0.223 rows=1 loops=1)
-  ->  Bitmap Heap Scan on "TeamMember"  (cost=4.72..64.24 rows=30 width=32) (actual time=0.054..0.218 rows=32 loops=1)
-        Recheck Cond: ("teamId" = '386a5102-0427-403a-b6c1-877de86d1ce0'::text)
-        Filter: (role = ('OWNER'::cstring)::"Role")
-        Rows Removed by Filter: 26
-        Heap Blocks: exact=47
-        ->  Bitmap Index Scan on "TeamMember_teamId_userId_key"  (cost=0.00..4.71 rows=58 width=0) (actual time=0.039..0.039 rows=58 loops=1)
-              Index Cond: ("teamId" = '386a5102-0427-403a-b6c1-877de86d1ce0'::text)
-Planning Time: 0.554 ms
-Execution Time: 0.252 ms
-  */
-
-  /*
-  SELECT COUNT(*) FROM 
-    (
-        SELECT "public"."TeamMember"."id" FROM "public"."TeamMember" WHERE (
-            "public"."TeamMember"."role" = CAST('OWNER'::text AS "public"."Role") AND "public"."TeamMember"."teamId" = '7974330a-c8ca-4043-9e3c-3f326d1b6973'
-        ) OFFSET 0
-    ) AS "sub"
-  */
-
-  /*
-Aggregate  (cost=1.03..1.04 rows=1 width=8) (actual time=0.028..0.028 rows=1 loops=1)
-  ->  Seq Scan on "TeamMember"  (cost=0.00..1.02 rows=1 width=32) (actual time=0.025..0.026 rows=1 loops=1)
-        Filter: (("teamId" = '7974330a-c8ca-4043-9e3c-3f326d1b6973'::text) AND (role = ('OWNER'::cstring)::"Role"))
-        Rows Removed by Filter: 4
-Planning Time: 0.625 ms
-Execution Time: 0.057 ms
-*/
-
-  const totalTeamOwners = await countTeamMembers({
-    where: {
-      role: Role.OWNER,
-      teamId: teamMember.teamId,
-    },
+  const ctx = await requireTenantContext(req, res, {
+    permission: 'portal.read',
   });
 
-  if (totalTeamOwners <= 1) {
-    throw new ApiError(400, 'A team should have at least one owner.');
-  }
+  await prisma.$transaction(async (tx) => {
+    await assertNotLastOwner(tx, ctx.team.id, ctx.user.id);
 
-  await removeTeamMember(teamMember.teamId, teamMember.user.id);
+    await tx.teamMember.delete({
+      where: {
+        teamId_userId: { teamId: ctx.team.id, userId: ctx.user.id },
+      },
+    });
+  });
 
   recordMetric('member.left');
 
@@ -148,38 +131,96 @@ Execution Time: 0.057 ms
 
 // Update the role of a member
 const handlePATCH = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_member', 'update');
-
-  const { memberId, role } = validateWithSchema(
-    updateMemberSchema,
-    req.body as { memberId: string; role: Role }
-  );
-
-  await validateMembershipOperation(memberId, teamMember, {
-    role,
+  const ctx = await requireTenantContext(req, res, {
+    permission: 'members.invite',
   });
 
-  const memberUpdated = await updateTeamMember({
-    where: {
-      teamId_userId: {
-        teamId: teamMember.teamId,
-        userId: memberId,
-      },
-    },
-    data: {
-      role,
-    },
+  const { memberId, role, portalRoleId } = validateWithSchema(
+    updateMemberSchema,
+    req.body
+  );
+
+  if (memberId === ctx.user.id) {
+    throw new ApiError(400, 'You cannot change your own role.');
+  }
+
+  await assertCanManageTarget(ctx, memberId);
+
+  await validateMembershipOperation(
+    memberId,
+    { ...ctx.member, team: ctx.team },
+    { role }
+  );
+
+  const actor = { permissions: ctx.permissions, actorRole: ctx.member.role };
+
+  // Work out the new base role and portal role.
+  let newRole: Role;
+  let newPortalRoleId: string | null;
+
+  if (portalRoleId) {
+    const portalRole = await resolveAssignableRole(
+      actor,
+      ctx.team.id,
+      portalRoleId
+    );
+
+    newRole = portalRole.baseRole;
+    newPortalRoleId = portalRole.id;
+  } else {
+    // Legacy path: set the base role only, drop any portal role.
+    newRole = role ?? Role.MEMBER;
+    newPortalRoleId = null;
+    assertCanGrantBaseRole(ctx.member.role, newRole);
+  }
+
+  const memberUpdated = await prisma.$transaction(async (tx) => {
+    if (newRole !== Role.OWNER) {
+      await assertNotLastOwner(tx, ctx.team.id, memberId);
+    }
+
+    return tx.teamMember.update({
+      where: { teamId_userId: { teamId: ctx.team.id, userId: memberId } },
+      data: { role: newRole, portalRoleId: newPortalRoleId },
+    });
   });
 
   sendAudit({
     action: 'member.update',
     crud: 'u',
-    user: teamMember.user,
-    team: teamMember.team,
+    user: ctx.user as never,
+    team: ctx.team,
   });
 
   recordMetric('member.role.updated');
 
   res.status(200).json({ data: memberUpdated });
 };
+
+/**
+ * An actor can only manage a member whose current permissions they fully
+ * hold (no editing or removing someone more powerful than yourself).
+ */
+async function assertCanManageTarget(
+  ctx: Awaited<ReturnType<typeof requireTenantContext>>,
+  memberId: string
+) {
+  const target = await prisma.teamMember.findFirst({
+    where: { teamId: ctx.team.id, userId: memberId },
+    include: {
+      portalRole: {
+        select: {
+          key: true,
+          permissions: { select: { permission: { select: { key: true } } } },
+        },
+      },
+    },
+  });
+
+  if (!target) {
+    throw new ApiError(404, 'Member not found.');
+  }
+
+  assertCanGrantBaseRole(ctx.member.role, target.role);
+  assertCanGrant(ctx, Array.from(getEffectivePermissions(target)));
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Checkbox } from 'react-daisyui';
+import { Checkbox } from '@/components/ui/daisy';
 
 const CheckboxComponent = ({
   onChange,
@@ -24,7 +24,7 @@ const CheckboxComponent = ({
           value={value}
           onChange={onChange}
           defaultChecked={Boolean(defaultChecked)}
-          className="h-4 w-4 rounded [--chkfg:oklch(var(--p))] [--chkbg:white]"
+          className="h-4 w-4 rounded checkbox-primary"
         />
         <span className="text-gray-700">{label}</span>
       </label>

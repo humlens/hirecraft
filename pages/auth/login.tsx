@@ -6,11 +6,11 @@ import type {
 import * as Yup from 'yup';
 import Link from 'next/link';
 import { useFormik } from 'formik';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import React, { type ReactElement, useEffect, useState, useRef } from 'react';
-import type { AlertProps } from 'react-daisyui';
+import type { AlertProps } from '@/components/ui/daisy';
 
 type ComponentStatus = NonNullable<AlertProps['status']>;
 import { getCsrfToken, signIn, useSession } from 'next-auth/react';
@@ -152,11 +152,11 @@ const Login: NextPageWithLayout<
                   value={formik.values.password}
                   label={
                     <label className="label">
-                      <span className="label-text">{t('password')}</span>
-                      <span className="label-text-alt">
+                      <span className="text-sm">{t('password')}</span>
+                      <span className="text-xs">
                         <Link
                           href="/auth/forgot-password"
-                          className="text-sm text-primary hover:text-[color-mix(in_oklab,oklch(var(--p)),black_7%)]"
+                          className="text-sm text-primary hover:text-[color-mix(in_oklab,var(--color-primary),black_7%)]"
                         >
                           {t('forgot-password')}
                         </Link>
@@ -220,7 +220,7 @@ const Login: NextPageWithLayout<
         {t('dont-have-an-account')}
         <Link
           href={`/auth/join${params}`}
-          className="font-medium text-primary hover:text-[color-mix(in_oklab,oklch(var(--p)),black_7%)]"
+          className="font-medium text-primary hover:text-[color-mix(in_oklab,var(--color-primary),black_7%)]"
         >
           &nbsp;{t('create-a-free-account')}
         </Link>

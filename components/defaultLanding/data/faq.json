@@ -1,14 +1,14 @@
 [
   {
-    "question": "What is BoxyHQ?",
-    "answer": "Enterprise readiness for B2B SaaS, straight out of the box."
+    "question": "What is HireCraft?",
+    "answer": "A multi-tenant hiring platform: every company gets its own branded careers portal, applicant tracking, interviews, offers and AI help."
   },
   {
-    "question": "What BoxyHQ offers?",
-    "answer": "At BoxyHQ we enable you to add plug-and-play enterprise-ready features to your SaaS product. Show enterprise customers and InfoSec teams you are ready to pass their processes with flying colors. We are open-source and free!"
+    "question": "How does the AI help?",
+    "answer": "It parses resumes, drafts job descriptions, explains candidate matches and answers recruiter questions. It only suggests: people make every hiring decision, and nothing is sent to a candidate without approval."
   },
   {
-    "question": "Is BoxyHQ offers developer security tools?",
-    "answer": "We have curated a list of awesome open-source developer security tools.It includes security principles and controls relevant to popular compliance certifications (like ISO27001, SOC2, MVSP, etc.)"
+    "question": "Is candidate data safe?",
+    "answer": "Every portal's data is isolated on the server, access follows roles and job assignments, candidates control their consent, and AI never sees names or protected attributes."
   }
 ]

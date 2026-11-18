@@ -41,7 +41,7 @@ export default async function handler(
     const message = err?.body?.detail || err.message || 'Something went wrong';
     const status = err.status || err.code || 500;
 
-    res.status(status).json({ error: { message } });
+    res.status(status).json({ error: { message, ...(err.details ?? {}) } });
   }
 }
 

@@ -6,11 +6,26 @@ import {
   ShieldExclamationIcon,
   UserPlusIcon,
   BanknotesIcon,
+  BuildingOffice2Icon,
+  ShieldCheckIcon,
+  BriefcaseIcon,
+  UsersIcon,
+  CalendarDaysIcon,
+  GiftIcon,
+  EnvelopeIcon,
+  ChartBarIcon,
+  AdjustmentsHorizontalIcon,
+  SparklesIcon,
+  CpuChipIcon,
+  ClipboardDocumentCheckIcon,
+  PuzzlePieceIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
 import useCanAccess from 'hooks/useCanAccess';
+import usePortalAccess from 'hooks/usePortalAccess';
 import Link from 'next/link';
+import PlanBanner from '@/components/billing/PlanBanner';
 import { TeamFeature } from 'types';
 
 interface TeamTabProps {
@@ -22,6 +37,7 @@ interface TeamTabProps {
 
 const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
   const { canAccess } = useCanAccess();
+  const { can, canAny } = usePortalAccess(team.slug);
 
   const navigations = [
     {
@@ -32,12 +48,129 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
     },
   ];
 
-  if (canAccess('team_member', ['create', 'update', 'read', 'delete'])) {
+  if (can('applications.read')) {
+    navigations.push({
+      name: 'Review',
+      href: `/teams/${team.slug}/review`,
+      active: activeTab === 'review',
+      icon: ClipboardDocumentCheckIcon,
+    });
+  }
+
+  if (can('jobs.read')) {
+    navigations.push({
+      name: 'Jobs',
+      href: `/teams/${team.slug}/jobs`,
+      active: activeTab === 'jobs',
+      icon: BriefcaseIcon,
+    });
+  }
+
+  if (canAny('candidates.read', 'candidates.search')) {
+    navigations.push({
+      name: 'Talent',
+      href: `/teams/${team.slug}/talent`,
+      active: activeTab === 'talent',
+      icon: UsersIcon,
+    });
+  }
+
+  if (canAny('interviews.manage', 'feedback.submit')) {
+    navigations.push({
+      name: 'Interviews',
+      href: `/teams/${team.slug}/interviews`,
+      active: activeTab === 'interviews',
+      icon: CalendarDaysIcon,
+    });
+  }
+
+  if (canAny('offers.manage', 'offers.approve')) {
+    navigations.push({
+      name: 'Offers',
+      href: `/teams/${team.slug}/offers`,
+      active: activeTab === 'offers',
+      icon: GiftIcon,
+    });
+  }
+
+  if (can('messages.send')) {
+    navigations.push({
+      name: 'Messages',
+      href: `/teams/${team.slug}/messages`,
+      active: activeTab === 'messages',
+      icon: EnvelopeIcon,
+    });
+  }
+
+  if (can('analytics.read')) {
+    navigations.push({
+      name: 'Analytics',
+      href: `/teams/${team.slug}/analytics`,
+      active: activeTab === 'analytics',
+      icon: ChartBarIcon,
+    });
+  }
+
+  if (can('ai.use')) {
+    navigations.push({
+      name: 'Copilot',
+      href: `/teams/${team.slug}/copilot`,
+      active: activeTab === 'copilot',
+      icon: SparklesIcon,
+    });
+  }
+
+  if (can('ai.configure')) {
+    navigations.push({
+      name: 'AI',
+      href: `/teams/${team.slug}/ai`,
+      active: activeTab === 'ai',
+      icon: CpuChipIcon,
+    });
+  }
+
+  if (canAny('integrations.manage', 'domain.manage')) {
+    navigations.push({
+      name: 'Integrations',
+      href: `/teams/${team.slug}/settings/integrations`,
+      active: activeTab === 'integrations',
+      icon: PuzzlePieceIcon,
+    });
+  }
+
+  if (can('automation.manage')) {
+    navigations.push({
+      name: 'Pipeline',
+      href: `/teams/${team.slug}/settings/pipeline`,
+      active: activeTab === 'pipeline',
+      icon: AdjustmentsHorizontalIcon,
+    });
+  }
+
+  if (can('portal.update') || can('branding.update')) {
+    navigations.push({
+      name: 'Portal',
+      href: `/teams/${team.slug}/portal`,
+      active: activeTab === 'portal',
+      icon: BuildingOffice2Icon,
+    });
+  }
+
+  if (canAny('members.invite', 'members.remove')) {
     navigations.push({
       name: 'Members',
       href: `/teams/${team.slug}/members`,
       active: activeTab === 'members',
       icon: UserPlusIcon,
+    });
+  }
+
+  if (canAny('roles.manage', 'members.invite')) {
+    navigations.push({
+      name: 'Roles',
+      href: `/teams/${team.slug}/roles`,
+      active: activeTab === 'roles',
+      icon: ShieldCheckIcon,
     });
   }
 
@@ -113,13 +246,18 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
     });
   }
 
+  const quick = navigations.filter((n) =>
+    ['Review', 'Jobs', 'Interviews', 'Talent'].includes(n.name)
+  );
+
   return (
-    <div className="flex flex-col pb-6">
+    <div className="flex flex-col pb-20 md:pb-6">
+      <PlanBanner slug={team.slug} canBilling={can('billing.manage')} />
       <h2 className="text-xl font-semibold mb-2">
         {heading ? heading : team.name}
       </h2>
       <nav
-        className=" flex flex-wrap border-b border-gray-300"
+        className="flex flex-nowrap overflow-x-auto whitespace-nowrap border-b border-gray-300 md:flex-wrap"
         aria-label="Tabs"
       >
         {navigations.map((menu) => {
@@ -139,6 +277,33 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
           );
         })}
       </nav>
+      {quick.length > 0 && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-white pb-[env(safe-area-inset-bottom)] dark:bg-black md:hidden"
+          aria-label="Quick navigation"
+        >
+          {[
+            ...quick,
+            {
+              name: 'Alerts',
+              href: '/notifications',
+              active: false,
+              icon: UsersIcon,
+            },
+          ].map((menu) => (
+            <Link
+              key={menu.href}
+              href={menu.href}
+              className={classNames(
+                'flex min-h-14 flex-1 items-center justify-center px-1 text-xs font-semibold',
+                menu.active ? 'bg-primary/10 text-primary' : 'opacity-70'
+              )}
+            >
+              {menu.name}
+            </Link>
+          ))}
+        </nav>
+      )}
     </div>
   );
 };

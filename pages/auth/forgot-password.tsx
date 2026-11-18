@@ -11,7 +11,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRef, type ReactElement, useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse, NextPageWithLayout } from 'types';
 import * as Yup from 'yup';
@@ -98,7 +98,7 @@ const ForgotPassword: NextPageWithLayout<
         {t('already-have-an-account')}
         <Link
           href="/auth/login"
-          className="font-medium text-primary hover:text-[color-mix(in_oklab,oklch(var(--p)),black_7%)]"
+          className="font-medium text-primary hover:text-[color-mix(in_oklab,var(--color-primary),black_7%)]"
         >
           &nbsp;{t('sign-in')}
         </Link>

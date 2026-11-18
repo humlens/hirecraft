@@ -3,7 +3,10 @@ import type { TeamMember, User } from '@prisma/client';
 import useSWR, { mutate } from 'swr';
 import type { ApiResponse } from 'types';
 
-export type TeamMemberWithUser = TeamMember & { user: User };
+export type TeamMemberWithUser = TeamMember & {
+  user: User;
+  portalRole?: { id: string; name: string } | null;
+};
 
 const useTeamMembers = (slug: string) => {
   const url = `/api/teams/${slug}/members`;

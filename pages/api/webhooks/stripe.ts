@@ -10,6 +10,11 @@ import {
   updateStripeSubscription,
 } from 'models/subscription';
 import { getByCustomerId } from 'models/team';
+import {
+  markPaymentFailed,
+  markPaymentOk,
+  syncTeamPlan,
+} from 'models/billingPlan';
 
 export const config = {
   api: {
@@ -30,6 +35,8 @@ const relevantEvents: Stripe.Event.Type[] = [
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'invoice.payment_failed',
+  'invoice.paid',
 ];
 
 export default async function POST(req: NextApiRequest, res: NextApiResponse) {
@@ -53,13 +60,26 @@ export default async function POST(req: NextApiRequest, res: NextApiResponse) {
       switch (event.type) {
         case 'customer.subscription.created':
           await handleSubscriptionCreated(event);
+          await syncPlan(event);
           break;
         case 'customer.subscription.updated':
           await handleSubscriptionUpdated(event);
+          await syncPlan(event);
           break;
         case 'customer.subscription.deleted':
           await deleteStripeSubscription(
             (event.data.object as Stripe.Subscription).id
+          );
+          await syncPlan(event);
+          break;
+        case 'invoice.payment_failed':
+          await markPaymentFailed(
+            (event.data.object as Stripe.Invoice).customer as string
+          );
+          break;
+        case 'invoice.paid':
+          await markPaymentOk(
+            (event.data.object as Stripe.Invoice).customer as string
           );
           break;
         default:
@@ -75,6 +95,12 @@ export default async function POST(req: NextApiRequest, res: NextApiResponse) {
     }
   }
   return res.status(200).json({ received: true });
+}
+
+async function syncPlan(event: Stripe.Event) {
+  await syncTeamPlan(
+    (event.data.object as Stripe.Subscription).customer as string
+  );
 }
 
 async function handleSubscriptionUpdated(event: Stripe.Event) {

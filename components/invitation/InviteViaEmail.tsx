@@ -3,12 +3,12 @@ import * as Yup from 'yup';
 import { mutate } from 'swr';
 import { useFormik } from 'formik';
 import toast from 'react-hot-toast';
-import { Button, Input } from 'react-daisyui';
+import { Button, Input } from '@/components/ui/daisy';
 import { useTranslation } from 'next-i18next';
 
 import type { ApiResponse } from 'types';
 import { defaultHeaders, maxLengthPolicies } from '@/lib/common';
-import { availableRoles } from '@/lib/permissions';
+import usePortalRoles from 'hooks/usePortalRoles';
 import type { Team } from '@prisma/client';
 
 interface InviteViaEmailProps {
@@ -18,23 +18,29 @@ interface InviteViaEmailProps {
 
 const InviteViaEmail = ({ setVisible, team }: InviteViaEmailProps) => {
   const { t } = useTranslation('common');
+  const { roles } = usePortalRoles(team.slug);
+  // Least-privilege default: the Viewer role, else the first member-level role
+  const defaultRoleId =
+    (
+      roles?.find((r) => r.key === 'viewer') ??
+      roles?.find((r) => r.baseRole === 'MEMBER')
+    )?.id ?? '';
 
   const FormValidationSchema = Yup.object().shape({
     email: Yup.string()
       .email()
       .max(maxLengthPolicies.email)
       .required(t('require-email')),
-    role: Yup.string()
-      .required(t('required-role'))
-      .oneOf(availableRoles.map((r) => r.id)),
+    portalRoleId: Yup.string().required(t('required-role')),
   });
 
   const formik = useFormik({
     initialValues: {
       email: '',
-      role: availableRoles[0].id,
+      portalRoleId: defaultRoleId,
       sentViaEmail: true,
     },
+    enableReinitialize: true,
     validationSchema: FormValidationSchema,
     onSubmit: async (values) => {
       const response = await fetch(`/api/teams/${team.slug}/invitations`, {
@@ -70,13 +76,16 @@ const InviteViaEmail = ({ setVisible, team }: InviteViaEmailProps) => {
           type="email"
         />
         <select
-          className="select-bordered select rounded"
-          name="role"
+          className=" select rounded"
+          name="portalRoleId"
           onChange={formik.handleChange}
-          value={formik.values.role}
+          value={formik.values.portalRoleId}
           required
         >
-          {availableRoles.map((role) => (
+          <option value="" disabled>
+            {t('role')}
+          </option>
+          {(roles ?? []).map((role) => (
             <option value={role.id} key={role.id}>
               {role.name}
             </option>
@@ -87,7 +96,7 @@ const InviteViaEmail = ({ setVisible, team }: InviteViaEmailProps) => {
           color="primary"
           loading={formik.isSubmitting}
           disabled={!formik.isValid || !formik.dirty}
-          className="flex-grow"
+          className="grow"
         >
           {t('send-invite')}
         </Button>

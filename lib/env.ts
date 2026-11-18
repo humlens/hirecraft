@@ -114,6 +114,61 @@ const env = {
 
   maxLoginAttempts: Number(process.env.MAX_LOGIN_ATTEMPTS) || 5,
 
+  // File storage. With S3_BUCKET set, S3-compatible storage is used; otherwise
+  // files go to a local directory (development and tests only).
+  storage: {
+    s3: {
+      endpoint: process.env.S3_ENDPOINT || undefined,
+      region: process.env.S3_REGION || 'us-east-1',
+      bucket: process.env.S3_BUCKET || '',
+      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
+    },
+    localDir: process.env.STORAGE_LOCAL_DIR || '.storage',
+    signingSecret:
+      process.env.STORAGE_SIGNING_SECRET || process.env.NEXTAUTH_SECRET || '',
+    maxResumeBytes: Number(process.env.MAX_RESUME_BYTES) || 5 * 1024 * 1024,
+  },
+
+  // Redis (queue + shared rate limits). Optional: without it jobs run inline.
+  redisUrl: process.env.REDIS_URL || '',
+
+  // AI
+  ai: {
+    enabled: process.env.FEATURE_AI !== 'false',
+    defaultProvider: (process.env.AI_DEFAULT_PROVIDER || '').toLowerCase(),
+    embeddingModel: process.env.AI_EMBEDDING_MODEL || 'text-embedding-3-small',
+    monthlyCredits: Number(process.env.AI_DEFAULT_MONTHLY_CREDITS) || 500,
+    ratePerMinute: Number(process.env.AI_RATE_PER_MINUTE) || 60,
+  },
+
+  // Web Push (Phase 5). Generate keys with: npx web-push generate-vapid-keys
+  push: {
+    enabled: process.env.FEATURE_PUSH !== 'false',
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+  },
+
+  // Custom domains (Phase 6)
+  customDomains: {
+    enabled: process.env.FEATURE_CUSTOM_DOMAINS !== 'false',
+    // hosts that are the platform itself, never a customer's domain
+    baseDomain: (process.env.PUBLIC_PORTAL_BASE_DOMAIN || '').toLowerCase(),
+    // what customers point their CNAME at, e.g. portals.example.com
+    cnameTarget: (process.env.PORTAL_CNAME_TARGET || '').toLowerCase(),
+  },
+
+  // Platform super admins (comma-separated, matched against verified account emails)
+  platformAdminEmails: (process.env.PLATFORM_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
+
+  // Shared secret for POST /api/internal/tick (worker / scheduler)
+  cronSecret: process.env.CRON_SECRET || '',
+
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
 
   stripe: {

@@ -1,25 +1,30 @@
 import { defaultHeaders } from '@/lib/common';
-import { availableRoles } from '@/lib/permissions';
 import { Team, TeamMember } from '@prisma/client';
+import usePortalRoles from 'hooks/usePortalRoles';
+import useTeamMembers, { TeamMemberWithUser } from 'hooks/useTeamMembers';
 import { useTranslation } from 'next-i18next';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
 interface UpdateMemberRoleProps {
   team: Team;
-  member: TeamMember;
+  member: TeamMemberWithUser;
 }
 
 const UpdateMemberRole = ({ team, member }: UpdateMemberRoleProps) => {
   const { t } = useTranslation('common');
+  const { roles } = usePortalRoles(team.slug);
+  const { mutateTeamMembers } = useTeamMembers(team.slug);
 
-  const updateRole = async (member: TeamMember, role: string) => {
+  const updateRole = async (member: TeamMember, portalRoleId: string) => {
     const response = await fetch(`/api/teams/${team.slug}/members`, {
       method: 'PATCH',
       headers: defaultHeaders,
       body: JSON.stringify({
         memberId: member.userId,
-        role,
+        // A member without a portal role keeps its base role until a portal
+        // role is picked.
+        portalRoleId,
       }),
     });
 
@@ -27,21 +32,29 @@ const UpdateMemberRole = ({ team, member }: UpdateMemberRoleProps) => {
 
     if (!response.ok) {
       toast.error(json.error.message);
+      mutateTeamMembers();
       return;
     }
 
     toast.success(t('member-role-updated'));
+    mutateTeamMembers();
   };
 
   return (
     <select
-      className="select select-bordered select-sm rounded"
-      defaultValue={member.role}
-      onChange={(e) => updateRole(member, e.target.value)}
+      className="select  select-sm rounded"
+      aria-label={t('role')}
+      value={member.portalRoleId ?? ''}
+      onChange={(e) => e.target.value && updateRole(member, e.target.value)}
     >
-      {availableRoles.map((role) => (
+      {!member.portalRoleId && (
+        <option value="" disabled>
+          {member.role}
+        </option>
+      )}
+      {(roles ?? []).map((role) => (
         <option value={role.id} key={role.id}>
-          {role.id}
+          {role.name}
         </option>
       ))}
     </select>
