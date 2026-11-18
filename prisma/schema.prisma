@@ -69,12 +69,19 @@ model User {
   invitations Invitation[]
 }
 
+enum PortalStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 model Team {
   id              String       @id @default(uuid())
   name            String
   slug            String       @unique
   domain          String?      @unique
   defaultRole     Role         @default(MEMBER)
+  status          PortalStatus @default(ACTIVE)
+  suspendedReason String?
   billingId       String?
   billingProvider String?
   createdAt       DateTime     @default(now())
@@ -83,22 +90,29 @@ model Team {
   invitations     Invitation[]
   apiKeys         ApiKey[]
 
+  portalProfile  PortalProfile?
+  portalBranding PortalBranding?
+  portalRoles    PortalRole[]
+
   @@index([billingId])
 }
 
 model TeamMember {
-  id        String   @id @default(uuid())
-  teamId    String
-  userId    String
-  role      Role     @default(MEMBER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  teamId       String
+  userId       String
+  role         Role     @default(MEMBER)
+  portalRoleId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
 
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team       Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portalRole PortalRole? @relation(fields: [portalRoleId], references: [id], onDelete: SetNull)
 
   @@unique([teamId, userId])
   @@index([userId])
+  @@index([portalRoleId])
 }
 
 model Invitation {
@@ -113,9 +127,11 @@ model Invitation {
   updatedAt      DateTime @default(now())
   sentViaEmail   Boolean  @default(true)
   allowedDomains String[] @default([])
+  portalRoleId   String?
 
-  user User @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  team       Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  portalRole PortalRole? @relation(fields: [portalRoleId], references: [id], onDelete: SetNull)
 
   @@unique([teamId, email])
   @@index([email])
@@ -217,4 +233,91 @@ model jackson_ttl {
 
   @@index([expiresAt], map: "_jackson_ttl_expires_at")
   @@ignore
+}
+
+// ---------------------------------------------------------------------------
+// Job portal domain: tenant (Team = Portal) extensions
+// ---------------------------------------------------------------------------
+
+enum PortalTheme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+model PortalProfile {
+  id                    String    @id @default(uuid())
+  teamId                String    @unique
+  companyName           String
+  description           String?   @db.Text
+  website               String?
+  contactEmail          String?
+  logoKey               String?
+  industry              String?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model PortalBranding {
+  id                String      @id @default(uuid())
+  teamId            String      @unique
+  primaryColor      String      @default("#3346D3")
+  theme             PortalTheme @default(SYSTEM)
+  heroTitle         String?
+  heroSubtitle      String?
+  aboutHtml         String?     @db.Text
+  privacyPolicyHtml String?     @db.Text
+  seoTitle          String?
+  seoDescription    String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String
+  group       String
+  createdAt   DateTime @default(now())
+
+  roles PortalRolePermission[]
+}
+
+// teamId = null means a system template; teamId set means a per-portal role
+// (either a copy of a system role, or a custom role).
+model PortalRole {
+  id          String   @id @default(uuid())
+  teamId      String?
+  key         String
+  name        String
+  description String?
+  baseRole    Role     @default(MEMBER)
+  isSystem    Boolean  @default(false)
+  isOwnerRole Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  team        Team?                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  permissions PortalRolePermission[]
+  members     TeamMember[]
+  invitations Invitation[]
+
+  @@unique([teamId, key])
+  @@index([teamId])
+}
+
+model PortalRolePermission {
+  roleId       String
+  permissionId String
+
+  role       PortalRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
 }

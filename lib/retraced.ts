@@ -20,7 +20,13 @@ type EventType =
   | 'webhook.update'
   | 'team.create'
   | 'team.update'
-  | 'team.delete';
+  | 'team.delete'
+  | 'portal.update'
+  | 'portal.branding.update'
+  | 'role.create'
+  | 'role.update'
+  | 'role.delete'
+  | 'member.role.assign';
 
 type Request = {
   action: EventType;

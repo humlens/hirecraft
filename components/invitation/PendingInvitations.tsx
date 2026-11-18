@@ -74,7 +74,13 @@ const PendingInvitations = ({ team }: { team: Team }) => {
       </div>
 
       <Table
-        cols={[t('email'), t('role'), t('expires-at'), t('actions')]}
+        cols={[
+          t('email'),
+          t('role'),
+          t('portal-role'),
+          t('expires-at'),
+          t('actions'),
+        ]}
         body={invitations.map((invitation) => {
           return {
             id: invitation.id,
@@ -90,6 +96,7 @@ const PendingInvitations = ({ team }: { team: Team }) => {
                 minWidth: 250,
               },
               { text: invitation.role },
+              { wrap: true, text: invitation.portalRole?.name ?? '-' },
               {
                 wrap: true,
                 text: new Date(invitation.expires).toDateString(),

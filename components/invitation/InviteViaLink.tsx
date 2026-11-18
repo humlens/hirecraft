@@ -8,7 +8,7 @@ import { useTranslation } from 'next-i18next';
 
 import type { ApiResponse } from 'types';
 import useInvitations from 'hooks/useInvitations';
-import { availableRoles } from '@/lib/permissions';
+import usePortalRoles from 'hooks/usePortalRoles';
 import type { Team } from '@prisma/client';
 import { defaultHeaders, isValidDomain, maxLengthPolicies } from '@/lib/common';
 import { InputWithCopyButton } from '../shared';
@@ -21,6 +21,13 @@ interface InviteViaLinkProps {
 const InviteViaLink = ({ team }: InviteViaLinkProps) => {
   const [showDelDialog, setShowDelDialog] = useState(false);
   const { t } = useTranslation('common');
+  const { roles } = usePortalRoles(team.slug);
+  // Least-privilege default: the Viewer role, else the first member-level role
+  const defaultRoleId =
+    (
+      roles?.find((r) => r.key === 'viewer') ??
+      roles?.find((r) => r.baseRole === 'MEMBER')
+    )?.id ?? '';
   const { invitations } = useInvitations({
     slug: team.slug,
     sentViaEmail: false,
@@ -41,18 +48,17 @@ const InviteViaLink = ({ team }: InviteViaLinkProps) => {
           return value.split(',').every(isValidDomain);
         }
       ),
-    role: Yup.string()
-      .required(t('required-role'))
-      .oneOf(availableRoles.map((r) => r.id)),
+    portalRoleId: Yup.string().required(t('required-role')),
   });
 
   // Create a new invitation link
   const formik = useFormik({
     initialValues: {
       domains: '',
-      role: availableRoles[0].id,
+      portalRoleId: defaultRoleId,
       sentViaEmail: false,
     },
+    enableReinitialize: true,
     validationSchema: FormValidationSchema,
     onSubmit: async (values) => {
       const response = await fetch(`/api/teams/${team.slug}/invitations`, {
@@ -140,12 +146,15 @@ const InviteViaLink = ({ team }: InviteViaLinkProps) => {
         />
         <select
           className="select-bordered select rounded"
-          name="role"
+          name="portalRoleId"
           onChange={formik.handleChange}
-          value={formik.values.role}
+          value={formik.values.portalRoleId}
           required
         >
-          {availableRoles.map((role) => (
+          <option value="" disabled>
+            {t('role')}
+          </option>
+          {(roles ?? []).map((role) => (
             <option value={role.id} key={role.id}>
               {role.name}
             </option>

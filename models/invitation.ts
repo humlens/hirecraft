@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 export type TeamInvitation = Pick<
   Invitation,
   'id' | 'email' | 'role' | 'expires' | 'allowedDomains' | 'token'
-> & { url: string };
+> & { url: string; portalRole?: { id: string; name: string } | null };
 
 /*
 Bitmap Heap Scan on "Invitation"  (cost=4.16..9.51 rows=1 width=168) (actual time=0.133..0.138 rows=4 loops=1)
@@ -55,13 +55,14 @@ export const getInvitations = async (teamId: string, sentViaEmail: boolean) => {
       expires: true,
       token: true,
       allowedDomains: true,
+      portalRole: { select: { id: true, name: true } },
     },
   });
 
   return invitations.map((invitation) => ({
     ...invitation,
     url: `${env.appUrl}/invitations/${invitation.token}`,
-  })) as (Invitation & { url: string })[];
+  })) as unknown as TeamInvitation[];
 };
 
 export const getInvitation = async (
@@ -75,6 +76,7 @@ export const getInvitation = async (
           id: true,
           name: true,
           slug: true,
+          status: true,
         },
       },
     },
@@ -90,10 +92,11 @@ export const getInvitation = async (
 export const createInvitation = async (
   params: Omit<
     Invitation,
-    'id' | 'token' | 'expires' | 'createdAt' | 'updatedAt'
-  >
+    'id' | 'token' | 'expires' | 'createdAt' | 'updatedAt' | 'portalRoleId'
+  > & { portalRoleId?: string | null }
 ) => {
   const data: Omit<Invitation, 'id' | 'createdAt' | 'updatedAt'> = {
+    portalRoleId: null,
     ...params,
     token: randomUUID(),
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

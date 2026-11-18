@@ -11,13 +11,16 @@ import {
   getInvitations,
   isInvitationExpired,
 } from 'models/invitation';
-import { addTeamMember, throwIfNoTeamAccess } from 'models/team';
-import { throwIfNotAllowed } from 'models/user';
+import { requireTenantContext } from '@/lib/tenant';
+import { assertCanGrantBaseRole } from '@/lib/authz';
+import { resolveAssignableRole } from 'models/portalRole';
+import { prisma } from '@/lib/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { recordMetric } from '@/lib/metrics';
 import { extractEmailDomain, isEmailAllowed } from '@/lib/email/utils';
 import { Invitation, Role } from '@prisma/client';
 import { countTeamMembers } from 'models/teamMember';
+import { syncSystemRoles } from 'models/portal';
 import {
   acceptInvitationSchema,
   deleteInvitationSchema,
@@ -62,18 +65,36 @@ export default async function handler(
 
 // Invite a user to a team
 const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_invitation', 'create');
+  const ctx = await requireTenantContext(req, res, {
+    permission: 'members.invite',
+  });
+  const teamMember = { ...ctx.member, team: ctx.team, user: ctx.user as never };
 
-  const { email, role, sentViaEmail, domains } = validateWithSchema(
-    inviteViaEmailSchema,
-    req.body
-  ) as {
+  const input = validateWithSchema(inviteViaEmailSchema, req.body) as {
     email?: string;
-    role: Role;
+    role?: Role;
+    portalRoleId?: string;
     sentViaEmail: boolean;
     domains?: string;
   };
+  const { email, sentViaEmail, domains } = input;
+
+  // The role a person is invited with can never exceed the inviter's own.
+  let role: Role = input.role ?? Role.MEMBER;
+  let portalRoleId: string | null = null;
+
+  if (input.portalRoleId) {
+    const portalRole = await resolveAssignableRole(
+      { permissions: ctx.permissions, actorRole: ctx.member.role },
+      ctx.team.id,
+      input.portalRoleId
+    );
+
+    role = portalRole.baseRole;
+    portalRoleId = portalRole.id;
+  } else {
+    assertCanGrantBaseRole(ctx.member.role, role);
+  }
 
   let invitation: undefined | Invitation = undefined;
 
@@ -156,6 +177,7 @@ Execution Time: 0.152 ms
       invitedBy: teamMember.userId,
       email,
       role,
+      portalRoleId,
       sentViaEmail: true,
       allowedDomains: [],
     });
@@ -167,6 +189,7 @@ Execution Time: 0.152 ms
       teamId: teamMember.teamId,
       invitedBy: teamMember.userId,
       role,
+      portalRoleId,
       email: null,
       sentViaEmail: false,
       allowedDomains: domains
@@ -199,8 +222,9 @@ Execution Time: 0.152 ms
 
 // Get all invitations for a team
 const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_invitation', 'read');
+  const teamMember = await requireTenantContext(req, res, {
+    anyPermission: ['members.invite', 'members.remove', 'roles.manage'],
+  });
 
   const { sentViaEmail } = validateWithSchema(
     getInvitationsSchema,
@@ -208,7 +232,7 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
   );
 
   const invitations = await getInvitations(
-    teamMember.teamId,
+    teamMember.team.id,
     sentViaEmail === 'true'
   );
 
@@ -219,8 +243,10 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
 
 // Delete an invitation
 const handleDELETE = async (req: NextApiRequest, res: NextApiResponse) => {
-  const teamMember = await throwIfNoTeamAccess(req, res);
-  throwIfNotAllowed(teamMember, 'team_invitation', 'delete');
+  const ctx = await requireTenantContext(req, res, {
+    permission: 'members.invite',
+  });
+  const teamMember = { ...ctx.member, team: ctx.team, user: ctx.user as never };
 
   const { id } = validateWithSchema(
     deleteInvitationSchema,
@@ -230,8 +256,8 @@ const handleDELETE = async (req: NextApiRequest, res: NextApiResponse) => {
   const invitation = await getInvitation({ id });
 
   if (
-    invitation.invitedBy != teamMember.user.id ||
-    invitation.team.id != teamMember.teamId
+    invitation.invitedBy != ctx.user.id ||
+    invitation.team.id != ctx.team.id
   ) {
     throw new ApiError(
       400,
@@ -294,17 +320,49 @@ const handlePUT = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   }
 
-  const teamMember = await addTeamMember(
-    invitation.team.id,
-    session?.user?.id as string,
-    invitation.role
-  );
+  if (invitation.team.status === 'SUSPENDED') {
+    throw new ApiError(403, 'This portal is suspended.');
+  }
+
+  const userId = session?.user?.id as string;
+
+  // Join + invitation cleanup are atomic. An existing member keeps their
+  // current role (an invitation must never silently change it).
+  const teamMember = await prisma.$transaction(async (tx) => {
+    const existing = await tx.teamMember.findUnique({
+      where: { teamId_userId: { teamId: invitation.team.id, userId } },
+    });
+
+    if (existing) {
+      throw new ApiError(400, 'You are already a member of this team.');
+    }
+
+    // Portals created before portal roles get their role copies on demand.
+    await syncSystemRoles(tx, invitation.team.id);
+
+    const portalRole = invitation.portalRoleId
+      ? await tx.portalRole.findFirst({
+          where: { id: invitation.portalRoleId, teamId: invitation.team.id },
+        })
+      : null;
+
+    const member = await tx.teamMember.create({
+      data: {
+        teamId: invitation.team.id,
+        userId,
+        role: portalRole?.baseRole ?? invitation.role,
+        portalRoleId: portalRole?.id ?? null,
+      },
+    });
+
+    if (invitation.sentViaEmail) {
+      await tx.invitation.delete({ where: { token: inviteToken } });
+    }
+
+    return member;
+  });
 
   await sendEvent(invitation.team.id, 'member.created', teamMember);
-
-  if (invitation.sentViaEmail) {
-    await deleteInvitation({ token: inviteToken });
-  }
 
   recordMetric('member.created');
 

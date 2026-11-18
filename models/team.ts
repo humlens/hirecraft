@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { findOrCreateApp } from '@/lib/svix';
 import { Role, Team } from '@prisma/client';
+import { ApiError } from '@/lib/errors';
+import { createPortal } from './portal';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getCurrentUser } from './user';
 import { normalizeUser } from './user';
@@ -11,17 +13,16 @@ export const createTeam = async (param: {
   userId: string;
   name: string;
   slug: string;
+  portal?: Pick<
+    Parameters<typeof createPortal>[0],
+    'profile' | 'branding' | 'completeOnboarding'
+  >;
 }) => {
   const { userId, name, slug } = param;
 
-  const team = await prisma.team.create({
-    data: {
-      name,
-      slug,
-    },
-  });
-
-  await addTeamMember(team.id, userId, Role.OWNER);
+  // Team, profile, branding, role copies and the owner membership are
+  // created atomically.
+  const team = await createPortal({ userId, name, slug, ...param.portal });
 
   await findOrCreateApp(team.name, team.id);
 
@@ -53,16 +54,19 @@ export const deleteTeam = async (key: { id: string } | { slug: string }) => {
 export const addTeamMember = async (
   teamId: string,
   userId: string,
-  role: Role
+  role: Role,
+  portalRoleId?: string | null
 ) => {
   return await prisma.teamMember.upsert({
     create: {
       teamId,
       userId,
       role,
+      portalRoleId: portalRoleId ?? null,
     },
     update: {
       role,
+      ...(portalRoleId !== undefined && { portalRoleId }),
     },
     where: {
       teamId_userId: {
@@ -258,6 +262,7 @@ export const getTeamMembers = async (slug: string) => {
           image: true,
         },
       },
+      portalRole: { select: { id: true, name: true } },
     },
   });
 
@@ -334,6 +339,10 @@ export const throwIfNoTeamAccess = async (
 
   if (!teamMember) {
     throw new Error('You do not have access to this team');
+  }
+
+  if (teamMember.team.status === 'SUSPENDED') {
+    throw new ApiError(403, 'This portal is suspended.');
   }
 
   return {

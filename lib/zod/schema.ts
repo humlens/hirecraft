@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { slugify } from '../server-common';
+import { isPermissionKey } from '../portal-roles';
 import {
   teamName,
   apiKeyId,
@@ -45,8 +46,82 @@ export const updateTeamSchema = z.object({
   domain,
 });
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .transform((v) => v.trim() || null)
+    .nullable()
+    .optional();
+
+export const portalProfileSchema = z.object({
+  companyName: z.string().trim().min(1).max(100).optional(),
+  description: optionalText(2000),
+  website: z
+    .string()
+    .max(300)
+    .url('Enter a valid URL')
+    .refine((v) => /^https?:\/\//i.test(v), 'Website must be http(s)')
+    .or(z.literal(''))
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
+  contactEmail: email
+    .or(z.literal(''))
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
+  industry: optionalText(100),
+});
+
+export const portalBrandingSchema = z.object({
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a hex value like #3346D3')
+    .optional(),
+  theme: z.enum(['LIGHT', 'DARK', 'SYSTEM']).optional(),
+  heroTitle: optionalText(120),
+  heroSubtitle: optionalText(300),
+  aboutHtml: z.string().max(20000).nullable().optional(),
+  privacyPolicyHtml: z.string().max(50000).nullable().optional(),
+  seoTitle: optionalText(70),
+  seoDescription: optionalText(160),
+});
+
+export const updatePortalSchema = z
+  .object({
+    profile: portalProfileSchema.optional(),
+    branding: portalBrandingSchema.optional(),
+  })
+  .refine((v) => v.profile || v.branding, 'Nothing to update');
+
 export const createTeamSchema = z.object({
   name: teamName,
+  slug: slug.transform((v) => slugify(v)).optional(),
+  profile: portalProfileSchema.optional(),
+  branding: portalBrandingSchema.optional(),
+  completeOnboarding: z.boolean().optional(),
+});
+
+const permissionKeys = z
+  .array(z.string().max(64))
+  .max(100)
+  .refine(
+    (keys) => keys.every(isPermissionKey),
+    'One or more permission keys are invalid'
+  );
+
+export const createPortalRoleSchema = z.object({
+  name: z.string().trim().min(2).max(50),
+  description: z.string().trim().max(200).optional(),
+  baseRole: z.enum(['MEMBER', 'ADMIN']).default('MEMBER'),
+  permissions: permissionKeys,
+});
+
+export const updatePortalRoleSchema = createPortalRoleSchema.partial();
+
+export const portalRoleIdSchema = z.object({
+  roleId: z.string().min(1).max(64),
 });
 
 export const updateAccountSchema = z.union([
@@ -83,14 +158,18 @@ export const resetPasswordSchema = z.object({
   token,
 });
 
+const portalRoleId = z.string().min(1).max(64).optional();
+
 export const inviteViaEmailSchema = z.union([
   z.object({
     email,
-    role,
+    role: role.optional(),
+    portalRoleId,
     sentViaEmail,
   }),
   z.object({
-    role,
+    role: role.optional(),
+    portalRoleId,
     sentViaEmail,
     domains,
   }),
@@ -119,10 +198,16 @@ export const checkoutSessionSchema = z.object({
   quantity: quantity.optional(),
 });
 
-export const updateMemberSchema = z.object({
-  role,
-  memberId,
-});
+export const updateMemberSchema = z
+  .object({
+    role: role.optional(),
+    portalRoleId: z.string().min(1).max(64).nullable().optional(),
+    memberId,
+  })
+  .refine(
+    (v) => v.role !== undefined || v.portalRoleId !== undefined,
+    'A role is required'
+  );
 
 export const acceptInvitationSchema = z.object({
   inviteToken,

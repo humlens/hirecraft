@@ -6,10 +6,13 @@ import {
   ShieldExclamationIcon,
   UserPlusIcon,
   BanknotesIcon,
+  BuildingOffice2Icon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
 import useCanAccess from 'hooks/useCanAccess';
+import usePortalAccess from 'hooks/usePortalAccess';
 import Link from 'next/link';
 import { TeamFeature } from 'types';
 
@@ -22,6 +25,7 @@ interface TeamTabProps {
 
 const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
   const { canAccess } = useCanAccess();
+  const { can, canAny } = usePortalAccess(team.slug);
 
   const navigations = [
     {
@@ -32,12 +36,30 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
     },
   ];
 
-  if (canAccess('team_member', ['create', 'update', 'read', 'delete'])) {
+  if (can('portal.update') || can('branding.update')) {
+    navigations.push({
+      name: 'Portal',
+      href: `/teams/${team.slug}/portal`,
+      active: activeTab === 'portal',
+      icon: BuildingOffice2Icon,
+    });
+  }
+
+  if (canAny('members.invite', 'members.remove')) {
     navigations.push({
       name: 'Members',
       href: `/teams/${team.slug}/members`,
       active: activeTab === 'members',
       icon: UserPlusIcon,
+    });
+  }
+
+  if (canAny('roles.manage', 'members.invite')) {
+    navigations.push({
+      name: 'Roles',
+      href: `/teams/${team.slug}/roles`,
+      active: activeTab === 'roles',
+      icon: ShieldCheckIcon,
     });
   }
 

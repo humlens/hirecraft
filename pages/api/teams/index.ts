@@ -46,10 +46,11 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
 
 // Create a team
 const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
-  const { name } = validateWithSchema(createTeamSchema, req.body);
+  const input = validateWithSchema(createTeamSchema, req.body);
+  const { name } = input;
 
   const user = await getCurrentUser(req, res);
-  const slug = slugify(name);
+  const slug = input.slug || slugify(name);
 
   if (await isTeamExists(slug)) {
     throw new ApiError(400, 'A team with the slug already exists.');
@@ -59,6 +60,11 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
     userId: user.id,
     name,
     slug,
+    portal: {
+      profile: input.profile,
+      branding: input.branding,
+      completeOnboarding: input.completeOnboarding,
+    },
   });
 
   recordMetric('team.created');

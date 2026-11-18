@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const client = new PrismaClient();
 const { hash } = require('bcryptjs');
 const { randomUUID } = require('crypto');
+const { PERMISSIONS, SYSTEM_ROLES } = require('../lib/portal-roles');
 
 let USER_COUNT = 10;
 const TEAM_COUNT = 5;
@@ -150,11 +151,142 @@ async function seedInvitations(teams: any[], users: any[]) {
   return newInvitations;
 }
 
+// ---------------------------------------------------------------------------
+// Job portal: permissions, system roles per portal, profile and branding
+// ---------------------------------------------------------------------------
+
+async function seedPermissions() {
+  await client.permission.createMany({
+    data: PERMISSIONS.map((p: any) => ({ ...p })),
+    skipDuplicates: true,
+  });
+  const rows = await client.permission.findMany();
+  return new Map<string, string>(rows.map((r: any) => [r.key, r.id]));
+}
+
+// Gives a team its portal profile, branding and system role copies, and maps
+// its existing members onto the matching portal role.
+async function provisionPortal(teamId: string, companyName: string) {
+  const permissionIds = await seedPermissions();
+
+  await client.portalProfile.upsert({
+    where: { teamId },
+    create: { teamId, companyName, onboardingCompletedAt: new Date() },
+    update: {},
+  });
+  await client.portalBranding.upsert({
+    where: { teamId },
+    create: { teamId },
+    update: {},
+  });
+
+  const roleIds = new Map<string, string>();
+  for (const def of SYSTEM_ROLES) {
+    const existing = await client.portalRole.findFirst({
+      where: { teamId, key: def.key },
+    });
+    const role =
+      existing ||
+      (await client.portalRole.create({
+        data: {
+          teamId,
+          key: def.key,
+          name: def.name,
+          description: def.description,
+          baseRole: def.baseRole,
+          isSystem: true,
+          isOwnerRole: def.isOwnerRole,
+          permissions: {
+            create: def.permissions.map((key: string) => ({
+              permissionId: permissionIds.get(key),
+            })),
+          },
+        },
+      }));
+    roleIds.set(def.key, role.id);
+  }
+
+  // Existing members: OWNER -> Portal Owner, ADMIN -> Admin, MEMBER -> Viewer
+  const byBase: Record<string, string> = {
+    OWNER: 'portal_owner',
+    ADMIN: 'admin',
+    MEMBER: 'viewer',
+  };
+  for (const [base, key] of Object.entries(byBase)) {
+    await client.teamMember.updateMany({
+      where: { teamId, role: base, portalRoleId: null },
+      data: { portalRoleId: roleIds.get(key) },
+    });
+  }
+
+  return roleIds;
+}
+
+const DEMO_PASSWORD = 'demo@123';
+
+// Two demo portals with one member per portal role.
+async function seedDemoPortals() {
+  const portals = [
+    { name: 'Acme Careers', slug: 'acme-careers', domain: 'acme.example' },
+    {
+      name: 'TechCareers India',
+      slug: 'techcareers-india',
+      domain: 'techcareers.example',
+    },
+  ];
+
+  for (const portal of portals) {
+    const team = await client.team.create({
+      data: { name: portal.name, slug: portal.slug },
+    });
+    const roleIds = await provisionPortal(team.id, portal.name);
+
+    await client.portalBranding.update({
+      where: { teamId: team.id },
+      data: {
+        heroTitle: `Join ${portal.name}`,
+        heroSubtitle: 'Find your next role with us',
+      },
+    });
+
+    const password = await hash(DEMO_PASSWORD, 12);
+
+    for (const def of SYSTEM_ROLES) {
+      const user = await client.user.create({
+        data: {
+          name: `${def.name} (${portal.slug})`,
+          email: `${def.key.replace('_', '-')}@${portal.domain}`,
+          password,
+          emailVerified: new Date(),
+        },
+      });
+      await client.teamMember.create({
+        data: {
+          teamId: team.id,
+          userId: user.id,
+          role: def.baseRole,
+          portalRoleId: roleIds.get(def.key),
+        },
+      });
+    }
+  }
+
+  console.log(
+    `Seeded demo portals (login as e.g. portal-owner@acme.example / ${DEMO_PASSWORD})`
+  );
+}
+
 async function init() {
   const users = await seedUsers();
   const teams = await seedTeams();
   await seedTeamMembers(users, teams);
   await seedInvitations(teams, users);
+
+  for (const team of teams) {
+    await provisionPortal(team.id, team.name);
+  }
+
+  await seedDemoPortals();
 }
 
 init();

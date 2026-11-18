@@ -62,7 +62,7 @@ const Teams = () => {
           <Button
             color="primary"
             size="md"
-            onClick={() => setCreateTeamVisible(!createTeamVisible)}
+            onClick={() => router.push('/onboarding')}
           >
             {t('create-team')}
           </Button>

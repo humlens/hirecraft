@@ -1,6 +1,6 @@
 import { Error, LetterAvatar, Loading } from '@/components/shared';
 import { Team, TeamMember } from '@prisma/client';
-import useCanAccess from 'hooks/useCanAccess';
+import usePortalAccess from 'hooks/usePortalAccess';
 import useTeamMembers, { TeamMemberWithUser } from 'hooks/useTeamMembers';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -18,7 +18,7 @@ import { Table } from '@/components/shared/table/Table';
 const Members = ({ team }: { team: Team }) => {
   const { data: session } = useSession();
   const { t } = useTranslation('common');
-  const { canAccess } = useCanAccess();
+  const { can } = usePortalAccess(team.slug);
   const [visible, setVisible] = useState(false);
   const [selectedMember, setSelectedMember] =
     useState<TeamMemberWithUser | null>(null);
@@ -68,19 +68,15 @@ const Members = ({ team }: { team: Team }) => {
   };
 
   const canUpdateRole = (member: TeamMember) => {
-    return (
-      session?.user.id != member.userId && canAccess('team_member', ['update'])
-    );
+    return session?.user.id != member.userId && can('members.invite');
   };
 
   const canRemoveMember = (member: TeamMember) => {
-    return (
-      session?.user.id != member.userId && canAccess('team_member', ['delete'])
-    );
+    return session?.user.id != member.userId && can('members.remove');
   };
 
-  const cols = [t('name'), t('email'), t('role')];
-  if (canAccess('team_member', ['delete'])) {
+  const cols = [t('name'), t('email'), t('role'), t('portal-role')];
+  if (can('members.remove')) {
     cols.push(t('actions'));
   }
 
@@ -117,11 +113,12 @@ const Members = ({ team }: { team: Team }) => {
                 minWidth: 200,
               },
               { wrap: true, text: member.user.email, minWidth: 250 },
+              { wrap: true, text: member.role },
               {
                 element: canUpdateRole(member) ? (
                   <UpdateMemberRole team={team} member={member} />
                 ) : (
-                  <span>{member.role}</span>
+                  <span>{member.portalRole?.name ?? '-'}</span>
                 ),
               },
               {
