@@ -62,14 +62,18 @@ export default route({
       modelByTier: input.modelByTier ?? {},
       ...key,
     };
-    const row = existing
-      ? await prisma.aIProviderConfig.update({
-          where: { id: existing.id },
-          data,
-        })
-      : await prisma.aIProviderConfig.create({
-          data: { teamId: null, ...data },
-        });
+    if (existing) {
+      await prisma.aIProviderConfig.updateMany({
+        where: { id: existing.id, teamId: null },
+        data,
+      });
+    } else {
+      await prisma.aIProviderConfig.create({ data: { teamId: null, ...data } });
+    }
+
+    const row = await prisma.aIProviderConfig.findFirst({
+      where: { teamId: null },
+    });
 
     await logPlatformAction(admin, 'ai.default.update', null, {
       provider: input.provider,

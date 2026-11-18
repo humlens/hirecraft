@@ -489,3 +489,24 @@ See [mobile.md](./mobile.md).
 - SMS stays an interface only (no provider), as in Phase 3.
 - No background sync or offline editing: offline support is limited to public job pages and an offline notice.
 - The service worker is registered in production builds only.
+
+# Phase 6: monetisation and enterprise
+
+See [enterprise.md](./enterprise.md).
+
+## 28. Modules added
+
+`lib/entitlements.ts`, `models/billingPlan.ts`, `lib/domains.ts`, `lib/domainRouting.ts`, `lib/platformAdmin.ts`,
+`lib/integrations/*`, `models/integration.ts`, `pages/api/admin/*`, `pages/admin`, `components/{billing,integrations,admin}/*`.
+
+## 29. Deviations and assumptions (Phase 6)
+
+- Enforcement defaults to off when billing (Stripe) is not configured, so self-hosted installs are not limited.
+- Candidate storage is metered and shown but not enforced: resumes belong to the candidate, and refusing an application
+  because the portal is over quota would punish the candidate.
+- AI resume parsing is candidate-side (no portal), so it is not plan-gated.
+- TLS certificates are issued by the edge proxy; the app verifies DNS and answers the proxy's `ask` request.
+- Platform admin impersonation is not implemented (suspension, plan and limit changes are, all audited).
+- HRMS integration reuses the kit's webhooks rather than a separate connector; background-check / assessment partners are
+  reached through one generic signed-webhook adapter, not vendor-specific APIs.
+- `middleware.ts` now also matches `/` (listed as public) because the matcher does not match the root path with i18n.

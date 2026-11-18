@@ -60,6 +60,8 @@ const generateCSP = (): string => {
 
 // Add routes that don't require authentication
 const unAuthenticatedRoutes = [
+  // the kit's public landing page (the matcher below now includes '/')
+  '/',
   '/api/hello',
   '/api/health',
   '/api/auth/**',
@@ -110,7 +112,11 @@ async function slugForHost(host: string) {
   let slug: string | null = null;
 
   try {
-    const base = process.env.INTERNAL_APP_URL || env.appUrl;
+    // env is inlined when the app is built: APP_URL (or INTERNAL_APP_URL) must be set at build time
+    const configured = process.env.INTERNAL_APP_URL || env.appUrl;
+    const base = /^https?:\/\//.test(configured)
+      ? configured
+      : `http://127.0.0.1:${process.env.PORT || 3000}`;
     const r = await fetch(
       `${base}/api/public/domains/resolve?host=${encodeURIComponent(host)}`
     );
@@ -129,6 +135,11 @@ async function slugForHost(host: string) {
 
 // A request to a customer's own domain: serve their public portal, send everything else home.
 async function handleCustomDomain(req: NextRequest, host: string) {
+  // the lookup endpoint itself must never depend on a lookup
+  if (req.nextUrl.pathname.startsWith('/api/public/domains/')) {
+    return NextResponse.next();
+  }
+
   const slug = await slugForHost(host);
 
   if (!slug) {
@@ -246,5 +257,9 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth/session).*)'],
+  matcher: [
+    // '/' is listed on its own: with i18n the pattern below does not match the root path
+    '/',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth/session).*)',
+  ],
 };

@@ -49,10 +49,25 @@
 | `VAPID_PRIVATE_KEY` | empty (push off)           | Private VAPID key. Server only, never returned by any API                                    |
 | `VAPID_SUBJECT`     | `mailto:admin@example.com` | Contact URL or `mailto:` the push services may use                                           |
 
+# Plans, domains, integrations and admin (Phase 6)
+
+| Variable                                                                 | Default   | Purpose                                                                                                    |
+| ------------------------------------------------------------------------ | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `ENTITLEMENTS_ENFORCEMENT`                                               | auto      | `on` / `off`. Auto = on when `STRIPE_SECRET_KEY` is set, so an install without billing has no limits       |
+| `PLATFORM_ADMIN_EMAILS`                                                  | empty     | Comma-separated emails of platform super admins (the account's email must be verified)                     |
+| `FEATURE_CUSTOM_DOMAINS`                                                 | `true`    | `false` turns custom domains off                                                                           |
+| `PUBLIC_PORTAL_BASE_DOMAIN`                                              | empty     | Your own platform domain; hosts under it can never be claimed as a customer domain                         |
+| `PORTAL_CNAME_TARGET`                                                    | empty     | What customers point their CNAME at (for example `portals.example.com`). Empty = TXT proof only            |
+| `INTERNAL_APP_URL`                                                       | `APP_URL` | Where middleware asks which portal serves a custom host                                                    |
+| `INTEGRATION_GOOGLE_CLIENT_ID`, `INTEGRATION_GOOGLE_CLIENT_SECRET`       | empty     | OAuth client for Google Calendar / Meet. Redirect URI: `APP_URL/api/integrations/callback/google_calendar` |
+| `INTEGRATION_MICROSOFT_CLIENT_ID`, `INTEGRATION_MICROSOFT_CLIENT_SECRET` | empty     | OAuth app for Outlook / Teams. Redirect URI: `APP_URL/api/integrations/callback/microsoft_calendar`        |
+
+`middleware.ts` runs on the edge runtime, which reads environment variables **when the app is built**:
+`APP_URL`, `INTERNAL_APP_URL`, `FEATURE_CUSTOM_DOMAINS`, `PUBLIC_PORTAL_BASE_DOMAIN` must be present at build time.
+
 Phase 1 added no environment variables. The variables below are added by
 later phases (documented here when introduced, together with `.env.example` and
-`lib/env.ts`): `PLATFORM_ADMIN_EMAILS`,
-`PUBLIC_PORTAL_BASE_DOMAIN`, `FEATURE_CUSTOM_DOMAINS`,
+`lib/env.ts`): `FEATURE_CUSTOM_DOMAINS`,
 `SMS_PROVIDER`.
 
 Existing variables are documented in `.env.example`.

@@ -8,7 +8,7 @@ import {
 import env from '@/lib/env';
 import { assertEntitlement } from '@/lib/entitlements';
 import { ApiError } from '@/lib/errors';
-import { prisma } from '@/lib/prisma';
+import { prisma, unguardedPrisma } from '@/lib/prisma';
 import { sendAudit } from '@/lib/retraced';
 import { requireTenantContext } from '@/lib/tenant';
 import { validateWithSchema } from '@/lib/zod';
@@ -75,15 +75,13 @@ export default route({
 
     // A verified domain belongs to one portal. Unverified claims may coexist:
     // whoever proves DNS control first wins.
-    const taken = await prisma.portalDomain
-      .findFirst({
-        where: {
-          teamId: { not: ctx.team.id },
-          hostname,
-          verifiedAt: { not: null },
-        },
-      })
-      .catch(() => null);
+    const taken = await unguardedPrisma.portalDomain.findFirst({
+      where: {
+        teamId: { not: ctx.team.id },
+        hostname,
+        verifiedAt: { not: null },
+      },
+    });
 
     if (taken) {
       throw new ApiError(

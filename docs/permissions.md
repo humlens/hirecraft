@@ -181,3 +181,15 @@ scorecards; **Viewer** can read analytics but not export.
 | Shortlist (`POST applications/stage`)           | `applications.manage`                 |
 | `GET push/config`, `POST/DELETE push/subscribe` | any signed-in user, own devices only  |
 | `GET public/portals/:slug/manifest`             | public                                |
+
+## Phase 6 endpoints
+
+| Endpoint                                                     | Permission                                                                  |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `GET plan`                                                   | any member (read-only billing state allowed)                                |
+| `GET/POST/DELETE domain`, `POST domain/verify`               | `domain.manage` + Enterprise                                                |
+| `GET integrations`, `POST/PUT/DELETE integrations/:provider` | `integrations.manage` + plan feature                                        |
+| `GET /api/integrations/callback/:provider`                   | the signed-in user who started the flow (permission re-checked)             |
+| `POST applications/:id/partner`                              | `applications.manage` (+ `offers.manage` and consent for background checks) |
+| `GET /api/public/domains/resolve`                            | public (slug of a verified host only)                                       |
+| `/api/admin/*`                                               | platform admin only (`PLATFORM_ADMIN_EMAILS`)                               |

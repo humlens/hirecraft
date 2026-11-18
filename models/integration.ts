@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
+import { validateWithSchema } from '@/lib/zod';
 import { decryptSecret, encryptSecret } from '@/lib/ai/crypto';
 import env from '@/lib/env';
 import {
@@ -213,7 +214,7 @@ export async function saveWebhookIntegration(
 
   await assertEntitlement(ctx.team.id, { feature: p.feature });
 
-  const { url, secret } = webhookSchema.parse(input);
+  const { url, secret } = validateWithSchema(webhookSchema, input);
 
   await assertSafeBaseUrl(url);
 

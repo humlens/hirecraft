@@ -237,3 +237,17 @@ erDiagram
 ```
 
 `NotificationPreference.push` (existing column) now controls push per notification type.
+
+## Phase 6: plans, domains, integrations, platform admin
+
+```mermaid
+erDiagram
+  Team ||--o{ UsageCounter : meters
+  Team ||--o{ PortalDomain : "custom domain"
+  Team ||--o{ Integration : connects
+  PlanEntitlement { string plan limits_json features }
+  PlatformAuditLog { string actorEmail string action }
+```
+
+`Team` gains `planKey`, `planOverride`, `paymentFailedAt`. `PortalDomain` has a partial unique index on verified hostnames.
+`Integration` keeps encrypted credentials. `PlanEntitlement` and `PlatformAuditLog` are platform-wide (no `teamId`).

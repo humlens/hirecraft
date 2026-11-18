@@ -22,7 +22,7 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --env=jsdom",
-    "test:integration": "prisma migrate deploy && INTEGRATION=1 NODE_OPTIONS=--experimental-vm-modules jest __tests__/integration --runInBand",
+    "test:integration": "prisma migrate deploy && INTEGRATION=1 NODE_OPTIONS=--experimental-vm-modules jest __tests__/integration --runInBand --forceExit",
     "build-ci": "next build --webpack",
     "sync-stripe": "node --env-file .env sync-stripe.js",
     "check-locale": "node check-locale.js",

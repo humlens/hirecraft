@@ -69,6 +69,6 @@ export default async function handler(
     const message = error.message || 'Something went wrong';
     const status = error.status || 500;
 
-    res.status(status).json({ error: { message } });
+    res.status(status).json({ error: { message, ...(error.details ?? {}) } });
   }
 }

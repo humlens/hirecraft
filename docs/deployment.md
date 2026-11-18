@@ -91,3 +91,12 @@ Interview reminders (24 h / 1 h), scheduled job publishing, closing dates and of
 - Serve over HTTPS (service workers and push need it). Set the VAPID variables to enable push.
 - Do not cache `/sw.js` at a CDN; the app sends `Cache-Control: no-cache` for it.
 - If you front the app with a proxy, forward `/manifest.webmanifest`, `/offline.html` and `/icons/*` unauthenticated.
+
+## Plans, custom domains and admin (Phase 6)
+
+- Set `STRIPE_*` and `metadata.plan` on each Stripe price to enforce plans; add the `invoice.payment_failed` and `invoice.paid`
+  events to the Stripe webhook.
+- Set `PLATFORM_ADMIN_EMAILS` to get `/admin`.
+- Custom domains: set `PORTAL_CNAME_TARGET`, `PUBLIC_PORTAL_BASE_DOMAIN`, `APP_URL` **before building** (the edge middleware
+  inlines them), and run an on-demand-TLS proxy whose `ask` endpoint is `/api/public/domains/resolve`.
+- Calendar integrations need the Google / Microsoft OAuth clients and the redirect URIs listed in `docs/env.md`.
