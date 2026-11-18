@@ -178,7 +178,7 @@ export const InterviewDetail = ({
               <div key={c} className="flex items-center gap-3 text-sm">
                 <span className="w-40">{c}</span>
                 <select
-                  className="select select-bordered select-sm"
+                  className="select  select-sm"
                   aria-label={c}
                   value={scores[c] ?? ''}
                   onChange={(e) =>
@@ -197,7 +197,7 @@ export const InterviewDetail = ({
               </div>
             ))}
             <select
-              className="select select-bordered select-sm"
+              className="select  select-sm"
               aria-label={t('recommendation', 'Recommendation')}
               value={rec}
               onChange={(e) => setRec(e.target.value)}
@@ -207,7 +207,7 @@ export const InterviewDetail = ({
               ))}
             </select>
             <textarea
-              className="textarea textarea-bordered w-full"
+              className="textarea  w-full"
               rows={3}
               aria-label={t('notes', 'Notes')}
               value={notes}
@@ -318,20 +318,20 @@ export const ScheduleInterview = ({
       </h4>
       <input
         type="datetime-local"
-        className="input input-bordered input-sm"
+        className="input  input-sm"
         aria-label={t('starts-at', 'Starts at')}
         value={startsAt}
         onChange={(e) => setStartsAt(e.target.value)}
       />
       <input
         type="number"
-        className="input input-bordered input-sm ml-2 w-24"
+        className="input  input-sm ml-2 w-24"
         aria-label={t('duration-min', 'Duration (min)')}
         value={duration}
         onChange={(e) => setDuration(e.target.value)}
       />
       <input
-        className="input input-bordered input-sm ml-2"
+        className="input  input-sm ml-2"
         placeholder="https://meet..."
         aria-label={t('meeting-link', 'Meeting link')}
         value={link}

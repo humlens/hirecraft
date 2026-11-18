@@ -84,6 +84,12 @@ const unAuthenticatedRoutes = [
   '/manifest.webmanifest',
   '/offline.html',
   '/icons/**',
+  // brand assets (also fetched server-side by the image optimizer)
+  '/logo*.png',
+  '/logo.svg',
+  '/favicon.*',
+  '/home-hero.svg',
+  '/user-default-profile.jpeg',
   '/api/candidate/register',
   // Local-disk storage driver (HMAC-signed URLs; S3 in production)
   '/api/storage/local',

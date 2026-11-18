@@ -51,7 +51,7 @@ const JobDescriptionAI = ({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <select
-        className="select select-bordered select-xs"
+        className="select  select-xs"
         aria-label={t('ai-tone', 'Tone')}
         value={tone}
         onChange={(e) => setTone(e.target.value)}

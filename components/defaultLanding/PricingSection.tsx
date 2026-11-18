@@ -1,6 +1,6 @@
 import { CheckIcon } from '@heroicons/react/20/solid';
 import { useTranslation } from 'next-i18next';
-import { Button, Card } from 'react-daisyui';
+import { Button, Card } from '@/components/ui/daisy';
 
 import plans from './data/pricing.json';
 

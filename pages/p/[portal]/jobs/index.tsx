@@ -60,21 +60,21 @@ const JobsPage: NextPageWithLayout<Props> = ({
         <input
           name="q"
           defaultValue={filters.q}
-          className="input input-bordered input-sm"
+          className="input  input-sm"
           placeholder="Keyword"
           aria-label={t('keyword', 'Keyword')}
         />
         <input
           name="location"
           defaultValue={filters.location}
-          className="input input-bordered input-sm"
+          className="input  input-sm"
           placeholder="Location"
           aria-label={t('location', 'Location')}
         />
         <select
           name="workMode"
           defaultValue={filters.workMode}
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('work-mode', 'Work mode')}
         >
           <option value="">{t('any-work-mode', 'Any work mode')}</option>
@@ -85,7 +85,7 @@ const JobsPage: NextPageWithLayout<Props> = ({
         <select
           name="employmentType"
           defaultValue={filters.employmentType}
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('employment-type', 'Employment type')}
         >
           <option value="">{t('any-type', 'Any type')}</option>

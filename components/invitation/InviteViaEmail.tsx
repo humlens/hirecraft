@@ -3,7 +3,7 @@ import * as Yup from 'yup';
 import { mutate } from 'swr';
 import { useFormik } from 'formik';
 import toast from 'react-hot-toast';
-import { Button, Input } from 'react-daisyui';
+import { Button, Input } from '@/components/ui/daisy';
 import { useTranslation } from 'next-i18next';
 
 import type { ApiResponse } from 'types';
@@ -76,7 +76,7 @@ const InviteViaEmail = ({ setVisible, team }: InviteViaEmailProps) => {
           type="email"
         />
         <select
-          className="select-bordered select rounded"
+          className=" select rounded"
           name="portalRoleId"
           onChange={formik.handleChange}
           value={formik.values.portalRoleId}
@@ -96,7 +96,7 @@ const InviteViaEmail = ({ setVisible, team }: InviteViaEmailProps) => {
           color="primary"
           loading={formik.isSubmitting}
           disabled={!formik.isValid || !formik.dirty}
-          className="flex-grow"
+          className="grow"
         >
           {t('send-invite')}
         </Button>

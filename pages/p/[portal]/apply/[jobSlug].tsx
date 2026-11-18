@@ -228,7 +228,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
           )}
           {mode === 'register' && (
             <input
-              className="input input-bordered w-full"
+              className="input  w-full"
               placeholder="Your name"
               aria-label={t('your-name', 'Your name')}
               required
@@ -237,7 +237,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
             />
           )}
           <input
-            className="input input-bordered w-full"
+            className="input  w-full"
             type="email"
             placeholder="Email"
             aria-label={t('email')}
@@ -246,7 +246,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
             onChange={(e) => setAuth({ ...auth, email: e.target.value })}
           />
           <input
-            className="input input-bordered w-full"
+            className="input  w-full"
             type="password"
             placeholder="Password"
             aria-label={t('password', 'Password')}
@@ -296,7 +296,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
               <input
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="file-input file-input-bordered file-input-sm w-full"
+                className="file-input  file-input-sm w-full"
                 data-testid="resume-upload"
                 onChange={(e) =>
                   e.target.files?.[0] && upload(e.target.files[0])
@@ -319,7 +319,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                   {q.type === 'TEXT' && (
                     <textarea
                       id={`q-${q.id}`}
-                      className="textarea textarea-bordered w-full"
+                      className="textarea  w-full"
                       required={q.required}
                       onChange={(e) => setAnswer(q.id, e.target.value)}
                     />
@@ -328,7 +328,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                     <input
                       id={`q-${q.id}`}
                       type="number"
-                      className="input input-bordered w-full"
+                      className="input  w-full"
                       required={q.required}
                       onChange={(e) => setAnswer(q.id, e.target.value)}
                     />
@@ -336,7 +336,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                   {q.type === 'BOOLEAN' && (
                     <select
                       id={`q-${q.id}`}
-                      className="select select-bordered w-full"
+                      className="select  w-full"
                       required={q.required}
                       defaultValue=""
                       onChange={(e) =>
@@ -354,7 +354,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                   {q.type === 'SINGLE' && (
                     <select
                       id={`q-${q.id}`}
-                      className="select select-bordered w-full"
+                      className="select  w-full"
                       required={q.required}
                       defaultValue=""
                       onChange={(e) => setAnswer(q.id, e.target.value)}

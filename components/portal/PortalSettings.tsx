@@ -3,7 +3,7 @@ import { defaultHeaders } from '@/lib/common';
 import { useTranslation } from 'next-i18next';
 import usePortal from 'hooks/usePortal';
 import { useEffect, useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -139,11 +139,11 @@ const PortalSettings = ({ slug }: { slug: string }) => {
                 setProfile({ ...profile, industry: e.target.value })
               }
             />
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('portal-description')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('portal-description')}</span>
               <textarea
                 name="description"
-                className="textarea textarea-bordered"
+                className="textarea "
                 rows={4}
                 value={profile.description}
                 onChange={(e) =>
@@ -188,11 +188,11 @@ const PortalSettings = ({ slug }: { slug: string }) => {
                 setBranding({ ...branding, primaryColor: e.target.value })
               }
             />
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('portal-theme')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('portal-theme')}</span>
               <select
                 name="theme"
-                className="select select-bordered"
+                className="select "
                 value={branding.theme}
                 onChange={(e) =>
                   setBranding({ ...branding, theme: e.target.value })
@@ -219,11 +219,11 @@ const PortalSettings = ({ slug }: { slug: string }) => {
                 setBranding({ ...branding, heroSubtitle: e.target.value })
               }
             />
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('portal-about')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('portal-about')}</span>
               <textarea
                 name="aboutHtml"
-                className="textarea textarea-bordered"
+                className="textarea "
                 rows={5}
                 value={branding.aboutHtml}
                 onChange={(e) =>
@@ -231,11 +231,11 @@ const PortalSettings = ({ slug }: { slug: string }) => {
                 }
               />
             </label>
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('portal-privacy')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('portal-privacy')}</span>
               <textarea
                 name="privacyPolicyHtml"
-                className="textarea textarea-bordered"
+                className="textarea "
                 rows={5}
                 value={branding.privacyPolicyHtml}
                 onChange={(e) =>

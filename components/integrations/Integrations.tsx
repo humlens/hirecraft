@@ -63,7 +63,7 @@ const Webhook = ({
   return (
     <div className="space-y-2">
       <input
-        className="input input-bordered input-sm w-full"
+        className="input  input-sm w-full"
         aria-label={`${app.name} URL`}
         placeholder="https://partner.example.com/hooks"
         value={url}
@@ -72,7 +72,7 @@ const Webhook = ({
       <input
         type="password"
         autoComplete="off"
-        className="input input-bordered input-sm w-full"
+        className="input  input-sm w-full"
         aria-label={`${app.name} signing secret`}
         placeholder={
           app.config?.hasSecret
@@ -132,7 +132,7 @@ const DomainCard = ({ slug, enabled }: { slug: string; enabled: boolean }) => {
           }}
         >
           <input
-            className="input input-bordered input-sm min-w-60 flex-1"
+            className="input  input-sm min-w-60 flex-1"
             aria-label={t('domain-host', 'Domain')}
             placeholder="careers.example.com"
             value={host}

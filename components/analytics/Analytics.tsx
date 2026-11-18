@@ -58,7 +58,7 @@ const Analytics = ({ slug }: { slug: string }) => {
           {t('analytics', 'Analytics')}
         </h2>
         <select
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('period', 'Period')}
           value={days}
           onChange={(e) => setDays(e.target.value)}

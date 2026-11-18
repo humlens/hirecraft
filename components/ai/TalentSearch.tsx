@@ -100,7 +100,7 @@ const TalentSearch = ({ slug, canAI }: { slug: string; canAI: boolean }) => {
       >
         <input
           type="search"
-          className="input input-bordered input-sm flex-1"
+          className="input  input-sm flex-1"
           aria-label={t('talent-search-nl', 'Search in plain language')}
           placeholder={
             canAI

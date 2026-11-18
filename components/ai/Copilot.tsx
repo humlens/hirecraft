@@ -103,7 +103,7 @@ const Copilot = ({ slug }: { slug: string }) => {
         </button>
       </aside>
 
-      <section className="flex min-h-[28rem] min-w-0 flex-1 flex-col rounded-lg border">
+      <section className="flex min-h-112 min-w-0 flex-1 flex-col rounded-lg border">
         <div className="flex-1 space-y-4 p-4" aria-live="polite">
           {thread.length === 0 && (
             <p className="py-16 text-center text-sm opacity-70">
@@ -158,7 +158,7 @@ const Copilot = ({ slug }: { slug: string }) => {
           }}
         >
           <input
-            className="input input-bordered input-sm flex-1"
+            className="input  input-sm flex-1"
             aria-label={t('copilot-message', 'Message copilot')}
             placeholder={t(
               'copilot-placeholder',

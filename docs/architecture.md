@@ -510,3 +510,15 @@ See [enterprise.md](./enterprise.md).
 - HRMS integration reuses the kit's webhooks rather than a separate connector; background-check / assessment partners are
   reached through one generic signed-webhook adapter, not vendor-specific APIs.
 - `middleware.ts` now also matches `/` (listed as public) because the matcher does not match the root path with i18n.
+
+# UI toolkit: Tailwind CSS 4 and daisyUI 5
+
+- Styles are configured in `styles/globals.css` (`@import 'tailwindcss'`, `@plugin 'daisyui'`, themes `corporate` and `black`);
+  there is no `tailwind.config.js`. The `dark` variant is class-based (`@custom-variant dark`).
+- `react-daisyui` (daisyUI 4 only) was removed. `components/ui/daisy.tsx` provides `Button`, `Input`, `Checkbox`, `Badge`,
+  `Alert`, `Card` and `Modal` with the same props, emitting daisyUI 5 classes.
+- daisyUI 5 emits its components inside the `utilities` layer, so app overrides go in `@layer utilities` wrapped in `:where()`
+  (zero specificity, so any utility class still wins). Element defaults (`a`, `body`) live in `@layer base`: unlayered CSS would
+  beat every utility.
+- Renamed classes: `form-control` -> `flex flex-col`, `label-text` -> `text-sm`, `*-bordered` removed (bordered by default),
+  `card-compact` -> `card-sm`, `card-bordered` -> `card-border`. Borders default to light gray to match Tailwind 3.

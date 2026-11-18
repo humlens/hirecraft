@@ -144,7 +144,7 @@ const ApplicationDetail = ({
             )}
             {can('applications.manage') && !application.withdrawnAt && (
               <select
-                className="select select-bordered select-sm"
+                className="select  select-sm"
                 aria-label={t('move-to', 'Move to...')}
                 value=""
                 onChange={(e) => e.target.value && move(e.target.value)}

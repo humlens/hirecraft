@@ -59,7 +59,7 @@ const Stages = ({ slug }: { slug: string }) => {
         {active.map((s, i) => (
           <li key={s.id} className="flex items-center gap-2">
             <input
-              className="input input-bordered input-xs"
+              className="input  input-xs"
               aria-label={`${t('stage-name', 'Stage name')} ${i + 1}`}
               defaultValue={s.name}
               onBlur={(e) =>
@@ -108,7 +108,7 @@ const Stages = ({ slug }: { slug: string }) => {
       </ol>
       <div className="flex gap-2">
         <input
-          className="input input-bordered input-sm"
+          className="input  input-sm"
           placeholder="New stage"
           aria-label={t('new-stage', 'New stage')}
           value={name}
@@ -225,7 +225,7 @@ const Rules = ({ slug }: { slug: string }) => {
       </ul>
       <div className="space-y-2 rounded border p-3 text-sm">
         <input
-          className="input input-bordered input-sm w-full"
+          className="input  input-sm w-full"
           placeholder="Rule name"
           aria-label={t('rule-name', 'Rule name')}
           value={f.name}
@@ -233,7 +233,7 @@ const Rules = ({ slug }: { slug: string }) => {
         />
         <div className="flex flex-wrap gap-2">
           <select
-            className="select select-bordered select-sm"
+            className="select  select-sm"
             aria-label={t('when', 'When')}
             value={f.trigger}
             onChange={(e) => setF({ ...f, trigger: e.target.value })}
@@ -243,7 +243,7 @@ const Rules = ({ slug }: { slug: string }) => {
           </select>
           {f.trigger === 'STAGE_ENTERED' && (
             <select
-              className="select select-bordered select-sm"
+              className="select  select-sm"
               aria-label={t('stage', 'Stage')}
               value={f.stageId}
               onChange={(e) => setF({ ...f, stageId: e.target.value })}
@@ -259,7 +259,7 @@ const Rules = ({ slug }: { slug: string }) => {
             </select>
           )}
           <select
-            className="select select-bordered select-sm"
+            className="select  select-sm"
             aria-label={t('then', 'Then')}
             value={f.action}
             onChange={(e) => setF({ ...f, action: e.target.value })}
@@ -270,7 +270,7 @@ const Rules = ({ slug }: { slug: string }) => {
         </div>
         {f.action === 'ADD_TAG' ? (
           <input
-            className="input input-bordered input-sm"
+            className="input  input-sm"
             placeholder="Tag"
             aria-label={t('tag', 'Tag')}
             value={f.tag}
@@ -279,14 +279,14 @@ const Rules = ({ slug }: { slug: string }) => {
         ) : (
           <>
             <input
-              className="input input-bordered input-sm w-full"
+              className="input  input-sm w-full"
               placeholder="Subject ({{candidate_name}}, {{job_title}}, {{company}})"
               aria-label={t('subject', 'Subject')}
               value={f.subject}
               onChange={(e) => setF({ ...f, subject: e.target.value })}
             />
             <textarea
-              className="textarea textarea-bordered w-full"
+              className="textarea  w-full"
               rows={3}
               placeholder="Message"
               aria-label={t('body', 'Message')}

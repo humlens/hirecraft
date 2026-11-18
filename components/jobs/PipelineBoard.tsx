@@ -96,7 +96,7 @@ const PipelineBoard = ({ slug, jobId }: { slug: string; jobId: string }) => {
           <span className="ml-auto flex items-center gap-2 text-sm">
             {selected.length} {t('selected', 'selected')}
             <select
-              className="select select-bordered select-sm"
+              className="select  select-sm"
               aria-label={t('bulk-move', 'Move selected to')}
               defaultValue=""
               onChange={(e) => e.target.value && move(selected, e.target.value)}
@@ -188,7 +188,7 @@ const PipelineBoard = ({ slug, jobId }: { slug: string; jobId: string }) => {
                     </div>
                     {canMove && !a.withdrawnAt && (
                       <select
-                        className="select select-bordered select-xs mt-2 w-full"
+                        className="select  select-xs mt-2 w-full"
                         aria-label={`Move ${a.candidate.name} to`}
                         value=""
                         onChange={(e) =>

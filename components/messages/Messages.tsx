@@ -74,14 +74,14 @@ const Message = ({
         {m.createdByAi && <span className="badge badge-info">AI</span>}
       </div>
       <input
-        className="input input-bordered input-sm w-full"
+        className="input  input-sm w-full"
         aria-label={t('subject', 'Subject')}
         value={subject}
         disabled={!editable}
         onChange={(e) => setSubject(e.target.value)}
       />
       <textarea
-        className="textarea textarea-bordered w-full"
+        className="textarea  w-full"
         rows={5}
         aria-label={t('body', 'Message')}
         value={body}
@@ -196,7 +196,7 @@ export const MessagesList = ({
             {t('messages', 'Messages')}
           </h2>
           <select
-            className="select select-bordered select-sm"
+            className="select  select-sm"
             aria-label={t('status', 'Status')}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -267,7 +267,7 @@ export const ComposeMessage = ({
     <div className="space-y-2 rounded border p-3 text-sm">
       <h4 className="font-semibold">{t('new-message', 'New message draft')}</h4>
       <select
-        className="select select-bordered select-sm"
+        className="select  select-sm"
         aria-label={t('kind', 'Type')}
         value={kind}
         onChange={(e) => setKind(e.target.value)}
@@ -279,14 +279,14 @@ export const ComposeMessage = ({
         )}
       </select>
       <input
-        className="input input-bordered input-sm w-full"
+        className="input  input-sm w-full"
         placeholder="Subject"
         aria-label={t('subject', 'Subject')}
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
       />
       <textarea
-        className="textarea textarea-bordered w-full"
+        className="textarea  w-full"
         rows={4}
         placeholder="Message"
         aria-label={t('body', 'Message')}

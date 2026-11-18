@@ -132,14 +132,14 @@ const TalentList = ({ slug }: { slug: string }) => {
 
       <div className="flex flex-wrap gap-2">
         <input
-          className="input input-bordered input-sm"
+          className="input  input-sm"
           placeholder="Name or email"
           aria-label={t('search', 'Search')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <select
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('tag', 'Tag')}
           value={tagId}
           onChange={(e) => setTagId(e.target.value)}
@@ -152,7 +152,7 @@ const TalentList = ({ slug }: { slug: string }) => {
           ))}
         </select>
         <select
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('pool', 'Pool')}
           value={poolId}
           onChange={(e) => setPoolId(e.target.value)}
@@ -257,7 +257,7 @@ const TalentList = ({ slug }: { slug: string }) => {
             )}
           </p>
           <textarea
-            className="textarea textarea-bordered w-full font-mono text-xs"
+            className="textarea  w-full font-mono text-xs"
             rows={4}
             aria-label={t('csv-content', 'CSV content')}
             value={csv}
@@ -267,7 +267,7 @@ const TalentList = ({ slug }: { slug: string }) => {
             type="file"
             accept=".csv,text/csv"
             aria-label={t('csv-file', 'CSV file')}
-            className="file-input file-input-bordered file-input-sm"
+            className="file-input  file-input-sm"
             onChange={async (e) =>
               e.target.files?.[0] && setCsv(await e.target.files[0].text())
             }
@@ -288,7 +288,7 @@ const TalentList = ({ slug }: { slug: string }) => {
           <h3 className="font-semibold">{t('talent-pools', 'Talent pools')}</h3>
           <div className="flex gap-2">
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder="New pool name"
               aria-label={t('new-pool', 'New pool name')}
               value={newPool}

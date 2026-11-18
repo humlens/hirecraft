@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -184,10 +184,10 @@ const OnboardingWizard = () => {
                 value={form.primaryColor}
                 onChange={(e) => set('primaryColor', e.target.value)}
               />
-              <label className="form-control w-full">
-                <span className="label-text pb-2">{t('portal-theme')}</span>
+              <label className="flex flex-col w-full">
+                <span className="text-sm pb-2">{t('portal-theme')}</span>
                 <select
-                  className="select select-bordered"
+                  className="select "
                   name="theme"
                   value={form.theme}
                   onChange={(e) => set('theme', e.target.value)}

@@ -5,7 +5,7 @@ import usePortalAccess from 'hooks/usePortalAccess';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -49,14 +49,14 @@ const JobsList = ({ slug }: { slug: string }) => {
 
       <div className="flex flex-wrap gap-2">
         <input
-          className="input input-bordered input-sm"
+          className="input  input-sm"
           placeholder="Search by title"
           aria-label={t('search-jobs', 'Search jobs')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <select
-          className="select select-bordered select-sm"
+          className="select  select-sm"
           aria-label={t('job-status', 'Status')}
           value={status}
           onChange={(e) => setStatus(e.target.value)}

@@ -108,7 +108,7 @@ const TenantsTab = () => {
       </div>
       <input
         type="search"
-        className="input input-bordered input-sm w-full max-w-xs"
+        className="input  input-sm w-full max-w-xs"
         aria-label={t('admin-search', 'Search tenants')}
         placeholder={t('admin-search-ph', 'Search name or slug')}
         value={q}
@@ -136,7 +136,7 @@ const TenantsTab = () => {
                 <td>{tn.owner?.email ?? '-'}</td>
                 <td>
                   <select
-                    className="select select-bordered select-xs"
+                    className="select  select-xs"
                     aria-label={`${tn.name} plan`}
                     value={tn.planOverride ?? ''}
                     onChange={(e) =>
@@ -261,7 +261,7 @@ const PlansTab = () => {
             >
               {k}
               <input
-                className="input input-bordered input-xs w-32"
+                className="input  input-xs w-32"
                 aria-label={`${p.label} ${k}`}
                 placeholder="unlimited"
                 inputMode="numeric"
@@ -359,7 +359,7 @@ const AiTab = () => {
         )}
       </p>
       <select
-        className="select select-bordered select-sm w-full"
+        className="select  select-sm w-full"
         aria-label={t('ai-default-provider', 'Provider')}
         value={provider}
         onChange={(e) => setProvider(e.target.value)}
@@ -370,7 +370,7 @@ const AiTab = () => {
       </select>
       {provider === 'OPENAI_COMPATIBLE' && (
         <input
-          className="input input-bordered input-sm w-full"
+          className="input  input-sm w-full"
           aria-label={t('ai-base-url', 'Base URL (https)')}
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
@@ -379,7 +379,7 @@ const AiTab = () => {
       <input
         type="password"
         autoComplete="off"
-        className="input input-bordered input-sm w-full"
+        className="input  input-sm w-full"
         aria-label={t('admin-ai-key', 'Platform API key')}
         placeholder={data.hasKey ? `Saved (${data.keyHint})` : 'sk-…'}
         value={apiKey}

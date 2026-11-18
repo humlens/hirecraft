@@ -8,7 +8,7 @@ import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import JobDescriptionAI from '@/components/ai/JobDescriptionAI';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
@@ -271,7 +271,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
                 <span className="flex items-center gap-1">
                   <input
                     type="datetime-local"
-                    className="input input-bordered input-sm"
+                    className="input  input-sm"
                     aria-label={t('publish-at', 'Publish at')}
                     value={publishAt}
                     onChange={(e) => setPublishAt(e.target.value)}
@@ -347,25 +347,25 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
               onApply={(html) => set('descriptionHtml', html)}
             />
           )}
-          <label className="form-control w-full">
-            <span className="label-text pb-2">
+          <label className="flex flex-col w-full">
+            <span className="text-sm pb-2">
               {t('job-description', 'Description (basic HTML allowed)')}
             </span>
             <textarea
               name="descriptionHtml"
-              className="textarea textarea-bordered"
+              className="textarea "
               rows={8}
               value={f.descriptionHtml}
               onChange={(e) => set('descriptionHtml', e.target.value)}
             />
           </label>
-          <label className="form-control w-full">
-            <span className="label-text pb-2">
+          <label className="flex flex-col w-full">
+            <span className="text-sm pb-2">
               {t('responsibilities', 'Responsibilities (one per line)')}
             </span>
             <textarea
               name="responsibilities"
-              className="textarea textarea-bordered"
+              className="textarea "
               rows={4}
               value={f.responsibilities}
               onChange={(e) => set('responsibilities', e.target.value)}
@@ -511,7 +511,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
               {(['city', 'region', 'country'] as const).map((k) => (
                 <input
                   key={k}
-                  className="input input-bordered input-sm"
+                  className="input  input-sm"
                   placeholder={k}
                   aria-label={`${k} ${i + 1}`}
                   value={l[k]}
@@ -564,7 +564,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
           {f.questions.map((q, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2">
               <select
-                className="select select-bordered select-sm"
+                className="select  select-sm"
                 aria-label={`type ${i + 1}`}
                 value={q.type}
                 onChange={(e) =>
@@ -583,7 +583,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
                 ))}
               </select>
               <input
-                className="input input-bordered input-sm min-w-[16rem] flex-1"
+                className="input  input-sm min-w-[16rem] flex-1"
                 placeholder="Question"
                 aria-label={`question ${i + 1}`}
                 value={q.prompt}
@@ -598,7 +598,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
               />
               {(q.type === 'SINGLE' || q.type === 'MULTI') && (
                 <input
-                  className="input input-bordered input-sm"
+                  className="input  input-sm"
                   placeholder="Options, comma separated"
                   aria-label={`options ${i + 1}`}
                   value={q.options}
@@ -681,11 +681,11 @@ const Select = ({
   onChange: (v: string) => void;
   options: string[];
 }) => (
-  <label className="form-control w-full">
-    <span className="label-text pb-2">{label}</span>
+  <label className="flex flex-col w-full">
+    <span className="text-sm pb-2">{label}</span>
     <select
       name={name}
-      className="select select-bordered"
+      className="select "
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -760,7 +760,7 @@ const Assignments = ({ slug, jobId }: { slug: string; jobId: string }) => {
               {m.name} ({m.email})
             </span>
             <select
-              className="select select-bordered select-sm"
+              className="select  select-sm"
               aria-label={`assignment ${m.email}`}
               value={picked[m.userId] ?? ''}
               onChange={(e) =>

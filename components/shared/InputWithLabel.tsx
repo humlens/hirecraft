@@ -1,4 +1,4 @@
-import { Input, InputProps } from 'react-daisyui';
+import { Input, InputProps } from '@/components/ui/daisy';
 
 interface InputWithLabelProps extends InputProps {
   label: string | React.ReactNode;
@@ -18,10 +18,10 @@ const InputWithLabel = (props: InputWithLabelProps) => {
   }
 
   return (
-    <div className="form-control w-full">
+    <div className="flex flex-col w-full">
       {typeof label === 'string' ? (
         <label className="label" htmlFor={id}>
-          <span className="label-text">{label}</span>
+          <span className="text-sm">{label}</span>
         </label>
       ) : (
         label
@@ -29,7 +29,7 @@ const InputWithLabel = (props: InputWithLabelProps) => {
       <Input className={classes.join(' ')} {...rest} id={id} />
       {(error || descriptionText) && (
         <label className="label">
-          <span className={`label-text-alt ${error ? 'text-red-500' : ''}`}>
+          <span className={`text-xs ${error ? 'text-red-500' : ''}`}>
             {error || descriptionText}
           </span>
         </label>

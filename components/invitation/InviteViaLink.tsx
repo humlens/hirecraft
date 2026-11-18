@@ -3,7 +3,7 @@ import { mutate } from 'swr';
 import { useFormik } from 'formik';
 import toast from 'react-hot-toast';
 import React, { useState } from 'react';
-import { Button, Input } from 'react-daisyui';
+import { Button, Input } from '@/components/ui/daisy';
 import { useTranslation } from 'next-i18next';
 
 import type { ApiResponse } from 'types';
@@ -145,7 +145,7 @@ const InviteViaLink = ({ team }: InviteViaLinkProps) => {
           className="text-sm w-1/2"
         />
         <select
-          className="select-bordered select rounded"
+          className=" select rounded"
           name="portalRoleId"
           onChange={formik.handleChange}
           value={formik.values.portalRoleId}
@@ -165,7 +165,7 @@ const InviteViaLink = ({ team }: InviteViaLinkProps) => {
           color="primary"
           loading={formik.isSubmitting}
           disabled={!formik.isValid}
-          className="flex-grow"
+          className="grow"
         >
           {t('create-link')}
         </Button>

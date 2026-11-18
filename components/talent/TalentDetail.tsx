@@ -120,7 +120,7 @@ const TalentDetail = ({
           <h3 className="font-semibold">{t('tags', 'Tags')}</h3>
           <div className="flex gap-2">
             <input
-              className="input input-bordered input-sm flex-1"
+              className="input  input-sm flex-1"
               aria-label={t('tags-comma', 'Tags (comma separated)')}
               value={tags}
               onChange={(e) => setTags(e.target.value)}
@@ -172,7 +172,7 @@ const TalentDetail = ({
         {can('candidates.update') && (
           <div className="flex gap-2">
             <textarea
-              className="textarea textarea-bordered flex-1"
+              className="textarea  flex-1"
               rows={2}
               aria-label={t('new-note', 'New note')}
               value={note}

@@ -46,7 +46,9 @@ export function customDomainAction(
     pathname === '/sw.js' ||
     pathname === '/offline.html' ||
     pathname === '/manifest.webmanifest' ||
-    pathname === '/favicon.ico'
+    pathname.startsWith('/favicon.') ||
+    pathname === '/logo.svg' ||
+    /^\/logo[\w-]*\.png$/.test(pathname)
   ) {
     return { kind: 'pass' };
   }

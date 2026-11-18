@@ -214,7 +214,7 @@ export const OfferDetail = ({
       {myTurn && (
         <section className="space-y-2 rounded border p-3 text-sm">
           <textarea
-            className="textarea textarea-bordered w-full"
+            className="textarea  w-full"
             rows={2}
             aria-label={t('comment', 'Comment')}
             value={comment}
@@ -298,7 +298,7 @@ export const CreateOffer = ({
   const field = (k: keyof typeof f, label: string, type = 'number') => (
     <input
       type={type}
-      className="input input-bordered input-sm w-36"
+      className="input  input-sm w-36"
       aria-label={label}
       placeholder={label}
       value={f[k]}

@@ -6,7 +6,7 @@ import usePortalRoles from 'hooks/usePortalRoles';
 import type { PortalRoleView } from 'models/portalRole';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -198,22 +198,22 @@ const Roles = ({ slug }: { slug: string }) => {
         </Modal.Header>
         <Modal.Body>
           <div className="space-y-4">
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('name')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('name')}</span>
               <input
                 name="roleName"
-                className="input input-bordered"
+                className="input "
                 value={draft?.name ?? ''}
                 onChange={(e) =>
                   setDraft((d) => d && { ...d, name: e.target.value })
                 }
               />
             </label>
-            <label className="form-control w-full">
-              <span className="label-text pb-2">{t('portal-description')}</span>
+            <label className="flex flex-col w-full">
+              <span className="text-sm pb-2">{t('portal-description')}</span>
               <input
                 name="roleDescription"
-                className="input input-bordered"
+                className="input "
                 value={draft?.description ?? ''}
                 onChange={(e) =>
                   setDraft((d) => d && { ...d, description: e.target.value })
@@ -221,7 +221,7 @@ const Roles = ({ slug }: { slug: string }) => {
               />
             </label>
             <fieldset className="space-y-3">
-              <legend className="label-text pb-1">
+              <legend className="text-sm pb-1">
                 {t('portal-permissions')}
               </legend>
               {groups.map((group) => (

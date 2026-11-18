@@ -141,12 +141,12 @@ const AISettings = ({ slug }: { slug: string }) => {
           ))}
         </div>
         {provider === 'OPENAI_COMPATIBLE' && (
-          <label className="form-control">
-            <span className="label-text pb-1">
+          <label className="flex flex-col">
+            <span className="text-sm pb-1">
               {t('ai-base-url', 'Base URL (https)')}
             </span>
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://llm.example.com/v1"
@@ -154,14 +154,14 @@ const AISettings = ({ slug }: { slug: string }) => {
           </label>
         )}
         <div className="flex flex-wrap items-end gap-2">
-          <label className="form-control min-w-64 flex-1">
-            <span className="label-text pb-1">
+          <label className="flex flex-col min-w-64 flex-1">
+            <span className="text-sm pb-1">
               {t('ai-own-key', 'Your own API key (optional)')}
             </span>
             <input
               type="password"
               autoComplete="off"
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder={s.hasOwnKey ? `Saved (${s.keyHint})` : 'sk-…'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
@@ -291,8 +291,8 @@ const AISettings = ({ slug }: { slug: string }) => {
             <h3 className="font-semibold">
               {t('ai-retention', 'Data & retention')}
             </h3>
-            <label className="form-control">
-              <span className="label-text pb-1">
+            <label className="flex flex-col">
+              <span className="text-sm pb-1">
                 {t(
                   'ai-log-days',
                   'Delete AI prompt/response logs after (days)'
@@ -302,7 +302,7 @@ const AISettings = ({ slug }: { slug: string }) => {
                 type="number"
                 min={1}
                 max={365}
-                className="input input-bordered input-sm"
+                className="input  input-sm"
                 value={retention}
                 onChange={(e) => setRetention(Number(e.target.value))}
               />

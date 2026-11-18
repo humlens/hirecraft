@@ -3,7 +3,7 @@ import type { FormikConfig } from 'formik';
 import { useFormik } from 'formik';
 import { useTranslation } from 'next-i18next';
 import React from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import type { WebhookFormSchema } from 'types';
 import * as Yup from 'yup';
 import Modal from '../shared/Modal';
@@ -71,9 +71,9 @@ const Form = ({
               descriptionText="The endpoint URL must be HTTPS"
             />
             <div className="divider"></div>
-            <div className="form-control w-full">
+            <div className="flex flex-col w-full">
               <label className="label">
-                <span className="label-text">{t('events-to-send')}</span>
+                <span className="text-sm">{t('events-to-send')}</span>
               </label>
               <p className="ml-1 mb-3 text-sm font-normal text-gray-500">
                 {t('events-description')}

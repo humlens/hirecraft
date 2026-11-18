@@ -4,7 +4,7 @@ import { defaultHeaders } from '@/lib/common';
 import { useMyProfile, useMyResumes } from 'hooks/useCandidate';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
-import { Button } from 'react-daisyui';
+import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 
@@ -169,12 +169,12 @@ const ProfileForm = () => {
   };
 
   const input = (key: keyof typeof f, label: string, type = 'text') => (
-    <label className="form-control w-full">
-      <span className="label-text pb-1">{label}</span>
+    <label className="flex flex-col w-full">
+      <span className="text-sm pb-1">{label}</span>
       <input
         type={type}
         name={key}
-        className="input input-bordered input-sm"
+        className="input  input-sm"
         value={f[key]}
         onChange={(e) => setF({ ...f, [key]: e.target.value })}
       />
@@ -206,7 +206,7 @@ const ProfileForm = () => {
           type="file"
           accept=".pdf,.docx"
           aria-label={t('upload-resume-file', 'Upload resume')}
-          className="file-input file-input-bordered file-input-sm"
+          className="file-input  file-input-sm"
           onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
         />
       </section>
@@ -228,22 +228,22 @@ const ProfileForm = () => {
         {input('linkedinUrl', 'LinkedIn')}
         {input('githubUrl', 'GitHub')}
         {input('portfolioUrl', t('portfolio', 'Portfolio'))}
-        <label className="form-control w-full sm:col-span-2">
-          <span className="label-text pb-1">{t('summary', 'Summary')}</span>
+        <label className="flex flex-col w-full sm:col-span-2">
+          <span className="text-sm pb-1">{t('summary', 'Summary')}</span>
           <textarea
-            className="textarea textarea-bordered"
+            className="textarea "
             rows={4}
             value={f.summary}
             onChange={(e) => setF({ ...f, summary: e.target.value })}
           />
         </label>
-        <label className="form-control w-full sm:col-span-2">
-          <span className="label-text pb-1">
+        <label className="flex flex-col w-full sm:col-span-2">
+          <span className="text-sm pb-1">
             {t('skills-comma', 'Skills (comma separated)')}
           </span>
           <input
             name="skills"
-            className="input input-bordered input-sm"
+            className="input  input-sm"
             value={f.skills}
             onChange={(e) => setF({ ...f, skills: e.target.value })}
           />
@@ -257,7 +257,7 @@ const ProfileForm = () => {
         {exps.map((e, i) => (
           <div key={i} className="grid gap-2 rounded border p-3 sm:grid-cols-2">
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder="Company"
               aria-label={`company ${i + 1}`}
               value={e.company}
@@ -270,7 +270,7 @@ const ProfileForm = () => {
               }
             />
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder="Title"
               aria-label={`title ${i + 1}`}
               value={e.title}
@@ -284,7 +284,7 @@ const ProfileForm = () => {
             />
             <input
               type="date"
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               aria-label={`start ${i + 1}`}
               value={e.startDate}
               onChange={(ev) =>
@@ -297,7 +297,7 @@ const ProfileForm = () => {
             />
             <input
               type="date"
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               aria-label={`end ${i + 1}`}
               disabled={e.current}
               value={e.endDate}
@@ -359,7 +359,7 @@ const ProfileForm = () => {
         {edus.map((e, i) => (
           <div key={i} className="grid gap-2 rounded border p-3 sm:grid-cols-2">
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder="Institution"
               aria-label={`institution ${i + 1}`}
               value={e.institution}
@@ -372,7 +372,7 @@ const ProfileForm = () => {
               }
             />
             <input
-              className="input input-bordered input-sm"
+              className="input  input-sm"
               placeholder="Degree"
               aria-label={`degree ${i + 1}`}
               value={e.degree}

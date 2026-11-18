@@ -42,7 +42,7 @@ const UpdateMemberRole = ({ team, member }: UpdateMemberRoleProps) => {
 
   return (
     <select
-      className="select select-bordered select-sm rounded"
+      className="select  select-sm rounded"
       aria-label={t('role')}
       value={member.portalRoleId ?? ''}
       onChange={(e) => e.target.value && updateRole(member, e.target.value)}
