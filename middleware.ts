@@ -89,6 +89,7 @@ const unAuthenticatedRoutes = [
   '/api/storage/local',
   // Called by the worker / a scheduler; authenticated by CRON_SECRET
   '/api/internal/tick',
+  '/api/internal/cron',
 ];
 
 const hostOf = (u?: string) => {

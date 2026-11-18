@@ -11,10 +11,6 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'boxyhq.com',
-      },
-      {
-        protocol: 'https',
         hostname: 'files.stripe.com',
       },
     ],

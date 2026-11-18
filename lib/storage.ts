@@ -42,10 +42,15 @@ const getS3 = () => {
       region: c.region,
       endpoint: c.endpoint,
       forcePathStyle: c.forcePathStyle,
-      credentials: {
-        accessKeyId: c.accessKeyId,
-        secretAccessKey: c.secretAccessKey,
-      },
+      // With no keys the AWS default chain is used (ECS task role, EC2 instance profile, ...)
+      ...(c.accessKeyId && c.secretAccessKey
+        ? {
+            credentials: {
+              accessKeyId: c.accessKeyId,
+              secretAccessKey: c.secretAccessKey,
+            },
+          }
+        : {}),
     });
   }
 

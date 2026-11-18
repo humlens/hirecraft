@@ -1,9 +1,9 @@
 {
-  "name": "BoxyHQ Enterprise SaaS Starter Kit",
-  "description": "The Open Source Next.js Enterprise SaaS Starter Kit. Next.js based SaaS starter kit that saves you months of development by starting you off with all the features that are the same in every product, so you can focus on what makes your app unique.",
-  "repository": "https://github.com/boxyhq/saas-starter-kit",
-  "logo": "https://boxyhq.com/img/logo.png",
-  "keywords": ["saas", "starter", "kit", "enterprise"],
+  "name": "HireCraft",
+  "description": "AI-enabled, multi-tenant job portal and applicant tracking system built on Next.js.",
+  "repository": "https://github.com/humlens/hirecraft",
+  "logo": "https://raw.githubusercontent.com/humlens/hirecraft/main/public/logo-512.png",
+  "keywords": ["ats", "recruitment", "jobs", "saas", "nextjs"],
   "env": {
     "NEXTAUTH_URL": {
       "description": "Next.js authentication URL."

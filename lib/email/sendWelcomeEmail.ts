@@ -1,3 +1,4 @@
+import app from '../app';
 import { render } from '@react-email/components';
 import { sendEmail } from './sendEmail';
 import { WelcomeEmail } from '@/components/emailTemplates';
@@ -7,7 +8,7 @@ export const sendWelcomeEmail = async (
   email: string,
   team: string
 ) => {
-  const subject = 'Welcome to BoxyHQ';
+  const subject = `Welcome to ${app.name}`;
   const html = await render(WelcomeEmail({ name, team, subject }));
 
   await sendEmail({

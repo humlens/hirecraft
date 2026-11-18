@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "prisma generate && next build --webpack",
+  "installCommand": "npm ci",
+  "functions": {
+    "pages/api/candidate/resumes/index.ts": { "maxDuration": 60 },
+    "pages/api/teams/[slug]/copilot.ts": { "maxDuration": 60 },
+    "pages/api/teams/[slug]/applications/[applicationId]/match.ts": {
+      "maxDuration": 60
+    },
+    "pages/api/internal/cron.ts": { "maxDuration": 60 }
+  }
+}
