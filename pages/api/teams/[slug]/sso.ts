@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import env from '@/lib/env';
@@ -80,6 +81,8 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
 const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   const teamMember = await throwIfNoTeamAccess(req, res);
 
+  await assertEntitlement(teamMember.teamId, { feature: 'sso' });
+
   throwIfNotAllowed(teamMember, 'team_sso', 'create');
 
   const connection = await sso.createConnection({
@@ -102,6 +105,8 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const handlePATCH = async (req: NextApiRequest, res: NextApiResponse) => {
   const teamMember = await throwIfNoTeamAccess(req, res);
+
+  await assertEntitlement(teamMember.teamId, { feature: 'sso' });
 
   throwIfNotAllowed(teamMember, 'team_sso', 'create');
 

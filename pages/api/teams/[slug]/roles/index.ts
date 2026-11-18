@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { requireTenantContext } from '@/lib/tenant';
 import { PERMISSIONS } from '@/lib/portal-roles';
@@ -57,6 +58,8 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   const ctx = await requireTenantContext(req, res, {
     permission: 'roles.manage',
   });
+
+  await assertEntitlement(ctx.team.id, { feature: 'customRoles' });
 
   const input = validateWithSchema(createPortalRoleSchema, req.body);
 

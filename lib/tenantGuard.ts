@@ -33,6 +33,9 @@ export const TENANT_MODELS = new Set<string>([
   'MessageDraft',
   'AutomationRule',
   'MatchAssessment',
+  'UsageCounter',
+  'PortalDomain',
+  'Integration',
   // teamId may be null (platform level) but must always be stated
   'AIUsage',
   'AIRequestLog',

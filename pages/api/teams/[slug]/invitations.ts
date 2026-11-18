@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import { sendTeamInviteEmail } from '@/lib/email/sendTeamInviteEmail';
 import { ApiError } from '@/lib/errors';
 import { sendAudit } from '@/lib/retraced';
@@ -78,6 +79,11 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
     domains?: string;
   };
   const { email, sentViaEmail, domains } = input;
+
+  // a seat is reserved by an email invitation; link invites take one when someone joins
+  if (sentViaEmail) {
+    await assertEntitlement(ctx.team.id, { limit: 'seats' });
+  }
 
   // The role a person is invited with can never exceed the inviter's own.
   let role: Role = input.role ?? Role.MEMBER;
@@ -293,6 +299,11 @@ const handlePUT = async (req: NextApiRequest, res: NextApiResponse) => {
   if (await isInvitationExpired(invitation.expires)) {
     throw new ApiError(400, 'Invitation expired. Please request a new one.');
   }
+
+  await assertEntitlement(invitation.teamId, {
+    limit: 'seats',
+    adding: invitation.sentViaEmail ? 0 : 1, // an email invite already holds its seat
+  });
 
   const session = await getSession(req, res);
   const email = session?.user.email as string;

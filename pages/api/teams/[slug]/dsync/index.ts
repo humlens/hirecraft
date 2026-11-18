@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import env from '@/lib/env';
 import { sendAudit } from '@/lib/retraced';
 import { throwIfNoTeamAccess } from 'models/team';
@@ -57,6 +58,8 @@ const handleGET = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   const teamMember = await throwIfNoTeamAccess(req, res);
+
+  await assertEntitlement(teamMember.teamId, { feature: 'scim' });
 
   throwIfNotAllowed(teamMember, 'team_dsync', 'create');
 

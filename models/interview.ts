@@ -1,3 +1,8 @@
+import {
+  syncInterviewCancelled,
+  syncInterviewCreated,
+  syncInterviewRescheduled,
+} from './integration';
 import type { Prisma } from '@prisma/client';
 import { ApiError } from '@/lib/errors';
 import { getEffectivePermissions } from '@/lib/authz';
@@ -324,6 +329,8 @@ export async function scheduleInterview(
     });
   }
 
+  await syncInterviewCreated(teamId, created.interview.id);
+
   return {
     ...(await getInterview(ctx, created.interview.id)),
     inviteDraftId: created.draftId,
@@ -433,6 +440,12 @@ export async function updateInterview(
       body: input.startsAt!.toUTCString(),
       link: `/teams/${ctx.team.slug}/interviews/${id}`,
     });
+  }
+
+  if (input.status === 'CANCELLED') {
+    await syncInterviewCancelled(teamId, id);
+  } else if (rescheduled) {
+    await syncInterviewRescheduled(teamId, id);
   }
 
   return getInterview(ctx, id);

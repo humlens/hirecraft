@@ -1,3 +1,4 @@
+import { enforcementOn, getEntitlements } from '../entitlements';
 import { ApiError } from '../errors';
 import env from '../env';
 import { prisma } from '../prisma';
@@ -155,6 +156,15 @@ export async function resolveAI(teamId: string | null): Promise<ResolvedAI> {
   const tiers =
     ((row?.modelByTier ?? {}) as Partial<Record<Tier, string>>) || {};
 
+  // the portal's plan sets its monthly credits (an explicit per-portal value wins)
+  let planCredits: number | undefined;
+
+  if (teamId && enforcementOn()) {
+    const e = await getEntitlements(teamId);
+
+    planCredits = e.limits.aiCreditsPerMonth ?? Number.MAX_SAFE_INTEGER;
+  }
+
   return {
     providerName,
     provider,
@@ -168,7 +178,8 @@ export async function resolveAI(teamId: string | null): Promise<ResolvedAI> {
     enabledFeatures:
       ((tenant?.enabledFeatures ?? {}) as Record<string, boolean>) || {},
     logRetentionDays: tenant?.logRetentionDays ?? 30,
-    monthlyCredits: tenant?.monthlyCredits ?? env.ai.monthlyCredits,
+    monthlyCredits:
+      tenant?.monthlyCredits ?? planCredits ?? env.ai.monthlyCredits,
   };
 }
 

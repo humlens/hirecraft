@@ -6,6 +6,16 @@ import type { User } from 'next-auth';
 import env from './env';
 
 type EventType =
+  | 'domain.add'
+  | 'domain.verify'
+  | 'domain.remove'
+  | 'integration.connect'
+  | 'integration.disconnect'
+  | 'plan.change'
+  | 'platform.tenant.suspend'
+  | 'platform.tenant.activate'
+  | 'platform.plan.update'
+  | 'platform.ai.update'
   | 'member.invitation.create'
   | 'member.invitation.delete'
   | 'member.remove'

@@ -1,3 +1,4 @@
+import { assertWritableState, planStateOf } from './entitlements';
 import type { Team, TeamMember } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { ApiError } from './errors';
@@ -50,6 +51,8 @@ export async function requireTenantContext(
     permission?: PermissionKey;
     anyPermission?: PermissionKey[];
     allowSuspended?: boolean;
+    /** Billing/payment fixes must still work when the portal is read-only. */
+    allowReadOnly?: boolean;
   } = {}
 ): Promise<TenantContext> {
   const session = await getSession(req, res);
@@ -89,6 +92,14 @@ export async function requireTenantContext(
         ? `This portal is suspended: ${team.suspendedReason}`
         : 'This portal is suspended.'
     );
+  }
+
+  // A failed payment past its grace period turns the portal read-only.
+  if (
+    !options.allowReadOnly &&
+    !['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? 'GET')
+  ) {
+    assertWritableState(planStateOf(team));
   }
 
   const ctx: TenantContext = {

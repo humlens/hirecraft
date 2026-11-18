@@ -18,12 +18,14 @@ import {
   SparklesIcon,
   CpuChipIcon,
   ClipboardDocumentCheckIcon,
+  PuzzlePieceIcon,
 } from '@heroicons/react/24/outline';
 import type { Team } from '@prisma/client';
 import classNames from 'classnames';
 import useCanAccess from 'hooks/useCanAccess';
 import usePortalAccess from 'hooks/usePortalAccess';
 import Link from 'next/link';
+import PlanBanner from '@/components/billing/PlanBanner';
 import { TeamFeature } from 'types';
 
 interface TeamTabProps {
@@ -124,6 +126,15 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
       href: `/teams/${team.slug}/ai`,
       active: activeTab === 'ai',
       icon: CpuChipIcon,
+    });
+  }
+
+  if (canAny('integrations.manage', 'domain.manage')) {
+    navigations.push({
+      name: 'Integrations',
+      href: `/teams/${team.slug}/settings/integrations`,
+      active: activeTab === 'integrations',
+      icon: PuzzlePieceIcon,
     });
   }
 
@@ -241,6 +252,7 @@ const TeamTab = ({ activeTab, team, heading, teamFeatures }: TeamTabProps) => {
 
   return (
     <div className="flex flex-col pb-20 md:pb-6">
+      <PlanBanner slug={team.slug} canBilling={can('billing.manage')} />
       <h2 className="text-xl font-semibold mb-2">
         {heading ? heading : team.name}
       </h2>

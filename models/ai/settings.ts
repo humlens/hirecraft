@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import { lookup } from 'dns/promises';
 import { isIP } from 'net';
 import { z } from 'zod';
@@ -145,6 +146,10 @@ export async function saveAiSettings(
 
   if (unknown.length) {
     throw new ApiError(422, `Unknown feature: ${unknown[0]}`);
+  }
+
+  if (input.apiKey) {
+    await assertEntitlement(teamId, { feature: 'byoKey' });
   }
 
   const existing = await prisma.aIProviderConfig.findFirst({

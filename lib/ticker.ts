@@ -1,3 +1,4 @@
+import { reconcileUsage } from './entitlements';
 import { jobStaffIds, notify } from './notifications';
 import { prisma, unguardedPrisma } from './prisma';
 import { sendEvent } from './svix';
@@ -13,6 +14,7 @@ export type TickResult = {
 };
 
 const slugCache = new Map<string, string>();
+let lastReconcileDay = '';
 
 async function teamSlug(teamId: string) {
   if (!slugCache.has(teamId)) {
@@ -214,6 +216,16 @@ export async function runDueTasks(now = new Date()): Promise<TickResult> {
   });
 
   result.aiLogsDeleted = purged.count;
+
+  // 6. usage gauges are reconciled from the source tables once a day (UTC)
+  const day = now.toISOString().slice(0, 10);
+
+  if (lastReconcileDay !== day) {
+    lastReconcileDay = day;
+    await reconcileUsage(now).catch((error) =>
+      console.error('usage reconciliation failed', error)
+    );
+  }
 
   return result;
 }

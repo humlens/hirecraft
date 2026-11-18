@@ -1,3 +1,4 @@
+import { recordUsage } from '@/lib/entitlements';
 import { jobStaffIds, notify } from '@/lib/notifications';
 import { prisma, unguardedPrisma } from '@/lib/prisma';
 import { runAutomations } from './automation';
@@ -12,6 +13,7 @@ export async function onApplicationCreated(args: {
   candidateName: string;
 }) {
   try {
+    await recordUsage(args.teamId, 'applications');
     await notify({
       userIds: await jobStaffIds(args.teamId, args.jobId),
       teamId: args.teamId,

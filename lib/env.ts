@@ -151,6 +151,21 @@ const env = {
     subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
   },
 
+  // Custom domains (Phase 6)
+  customDomains: {
+    enabled: process.env.FEATURE_CUSTOM_DOMAINS !== 'false',
+    // hosts that are the platform itself, never a customer's domain
+    baseDomain: (process.env.PUBLIC_PORTAL_BASE_DOMAIN || '').toLowerCase(),
+    // what customers point their CNAME at, e.g. portals.example.com
+    cnameTarget: (process.env.PORTAL_CNAME_TARGET || '').toLowerCase(),
+  },
+
+  // Platform super admins (comma-separated, matched against verified account emails)
+  platformAdminEmails: (process.env.PLATFORM_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
+
   // Shared secret for POST /api/internal/tick (worker / scheduler)
   cronSecret: process.env.CRON_SECRET || '',
 

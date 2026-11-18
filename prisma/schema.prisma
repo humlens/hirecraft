@@ -93,12 +93,19 @@ model Team {
   suspendedReason String?
   billingId       String?
   billingProvider String?
+  // Phase 6: plan from the Stripe price metadata (or a platform-admin override)
+  planKey         String       @default("free")
+  planOverride    String?
+  paymentFailedAt DateTime?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @default(now())
   members         TeamMember[]
   invitations     Invitation[]
   apiKeys         ApiKey[]
 
+  usageCounters    UsageCounter[]
+  portalDomains    PortalDomain[]
+  integrations     Integration[]
   portalProfile    PortalProfile?
   portalBranding   PortalBranding?
   portalRoles      PortalRole[]
@@ -1171,4 +1178,80 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6: entitlements, domains, integrations, platform admin
+// ---------------------------------------------------------------------------
+
+// Editable by the platform admin; code defaults in lib/entitlements.ts fill the gaps.
+model PlanEntitlement {
+  plan      String   @id
+  limits    Json
+  features  String[]
+  updatedAt DateTime @updatedAt
+}
+
+// Metered usage per portal and month (gauges are set by the nightly reconciliation).
+model UsageCounter {
+  id          String   @id @default(uuid())
+  teamId      String
+  metric      String
+  periodStart DateTime
+  value       Float    @default(0)
+  updatedAt   DateTime @updatedAt
+  team        Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, metric, periodStart])
+  @@index([teamId, periodStart])
+}
+
+model PortalDomain {
+  id                String    @id @default(uuid())
+  teamId            String
+  hostname          String
+  verificationToken String
+  verifiedAt        DateTime?
+  certificateStatus String    @default("PENDING")
+  lastCheckedAt     DateTime?
+  lastError         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  team              Team      @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, hostname])
+  @@index([hostname])
+}
+
+// Append-only record of what platform admins did.
+model PlatformAuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String
+  actorEmail   String
+  action       String
+  targetTeamId String?
+  details      Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetTeamId, createdAt])
+}
+
+// A connected third-party app. Secrets are encrypted (AES-256-GCM) and never returned.
+model Integration {
+  id                   String   @id @default(uuid())
+  teamId               String
+  provider             String
+  kind                 String
+  status               String   @default("CONNECTED")
+  accountLabel         String?
+  config               Json     @default("{}")
+  encryptedCredentials String?
+  connectedById        String?
+  lastError            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  team                 Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, provider])
 }

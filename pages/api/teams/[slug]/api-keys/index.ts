@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import { createApiKey, fetchApiKeys } from 'models/apiKey';
 import { getCurrentUserWithTeam, throwIfNoTeamAccess } from 'models/team';
 import { throwIfNotAllowed } from 'models/user';
@@ -57,6 +58,7 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
   const user = await getCurrentUserWithTeam(req, res);
 
   throwIfNotAllowed(user, 'team_api_key', 'create');
+  await assertEntitlement(user.team.id, { feature: 'api' });
 
   const { name } = validateWithSchema(createApiKeySchema, req.body);
 

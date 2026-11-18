@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import { route } from '@/lib/apiRoute';
 import { requireTenantContext } from '@/lib/tenant';
 import { validateWithSchema } from '@/lib/zod';
@@ -16,6 +17,9 @@ export default route({
     const ctx = await requireTenantContext(req, res, {
       permission: 'automation.manage',
     });
+
+    await assertEntitlement(ctx.team.id, { feature: 'automation' });
+
     const input = validateWithSchema(ruleSchema, req.body);
     const rule = await createRule(ctx, input);
 

@@ -1,3 +1,4 @@
+import { assertEntitlement, recordUsage } from '@/lib/entitlements';
 import { Prisma, type JobAssignmentKind } from '@prisma/client';
 import { ApiError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
@@ -353,6 +354,12 @@ export async function runJobAction(
       }
 
       guardPublishable();
+      await assertEntitlement(teamId, {
+        limit: 'activeJobs',
+        adding: job.status === 'SCHEDULED' ? 0 : 1,
+      });
+
+      void recordUsage(teamId, 'jobs_published');
 
       return set({ status: 'PUBLISHED', publishedAt: now, publishAt: null });
     }
@@ -369,6 +376,7 @@ export async function runJobAction(
       }
 
       guardPublishable();
+      await assertEntitlement(teamId, { limit: 'activeJobs' });
 
       return set({ status: 'SCHEDULED', publishAt });
     }
@@ -387,6 +395,7 @@ export async function runJobAction(
       }
 
       guardPublishable();
+      await assertEntitlement(teamId, { limit: 'activeJobs' });
 
       return set({ status: 'PUBLISHED' });
     }

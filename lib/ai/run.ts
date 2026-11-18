@@ -1,3 +1,7 @@
+import {
+  assertEntitlement,
+  type FeatureKey as FeatureKeyPlan,
+} from '../entitlements';
 import type { Team } from '@prisma/client';
 import { ApiError } from '../errors';
 import env from '../env';
@@ -106,6 +110,16 @@ async function record(
  *  4. model call; output validated with zod, retried ONCE on a validation failure
  *  5. usage + redacted request log (retention per portal) + audit event
  */
+const PLAN_FEATURE: Partial<Record<string, FeatureKeyPlan>> = {
+  'jd.generate': 'ai.assist',
+  'search.parse': 'ai.assist',
+  'interview.questions': 'ai.assist',
+  'interview.summary': 'ai.assist',
+  'comms.draft': 'ai.assist',
+  'match.assess': 'ai.match',
+  'copilot.step': 'ai.copilot',
+};
+
 export async function runAIFeature<K extends FeatureKey>(
   ctx: AIContext,
   featureKey: K,
@@ -126,6 +140,11 @@ export async function runAIFeature<K extends FeatureKey>(
   }
 
   const resolved = await resolveAI(ctx.teamId);
+
+  // plan gate (portal calls only): matching and the copilot need a higher plan
+  if (ctx.teamId && PLAN_FEATURE[featureKey]) {
+    await assertEntitlement(ctx.teamId, { feature: PLAN_FEATURE[featureKey]! });
+  }
 
   if (resolved.enabledFeatures[featureKey] === false) {
     throw new ApiError(403, `${feature.label} is turned off for this portal.`);

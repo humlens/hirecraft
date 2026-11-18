@@ -1,3 +1,4 @@
+import { assertEntitlement } from '@/lib/entitlements';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { ApiError } from '@/lib/errors';
 import { requireTenantContext } from '@/lib/tenant';
@@ -66,6 +67,7 @@ const handlePUT = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (input.branding) {
     requirePermission(ctx, 'branding.update');
+    await assertEntitlement(ctx.team.id, { feature: 'branding' });
   }
 
   if (!input.profile && !input.branding) {
