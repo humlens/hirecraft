@@ -6,6 +6,7 @@ import {
   monthStart,
   planStateOf,
   PLAN_LABELS,
+  getPlanDefinition,
 } from '@/lib/entitlements';
 import { requirePlatformAdmin } from '@/lib/platformAdmin';
 import { unguardedPrisma } from '@/lib/prisma';
@@ -59,9 +60,23 @@ export default route({
       }),
     ]);
 
+    const usedByTeam = new Map(
+      (
+        await unguardedPrisma.aIUsage.groupBy({
+          by: ['teamId'],
+          where: {
+            status: 'OK',
+            createdAt: { gte: monthStart() },
+            teamId: { in: teams.map((t) => t.id) },
+          },
+          _sum: { credits: true },
+        })
+      ).map((r) => [r.teamId, r._sum.credits ?? 0])
+    );
     const rows = await Promise.all(
       teams.map(async (t) => {
         const state = planStateOf(t);
+        const limits = (await getPlanDefinition(state.plan)).limits;
         const usage = Object.fromEntries(
           await Promise.all(
             LIMIT_KEYS.map(async (k) => [k, await measure(t.id, k)] as const)
@@ -81,6 +96,8 @@ export default route({
           paymentIssue: !!t.paymentFailedAt,
           readOnly: state.readOnly,
           usage,
+          limits,
+          aiCreditsUsed: usedByTeam.get(t.id) ?? 0,
           createdAt: t.createdAt,
         };
       })

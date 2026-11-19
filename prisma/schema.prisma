@@ -944,6 +944,7 @@ model Offer {
   startDate     DateTime?
   expiresAt     DateTime?
   terms         String?     @db.Text
+  templateKey   String?
   status        OfferStatus @default(DRAFT)
   round         Int         @default(0)
   createdById   String?
@@ -1066,6 +1067,7 @@ model AIProviderConfig {
   encryptedApiKey  String?    @db.Text
   keyHint          String?
   modelByTier      Json       @default("{}")
+  tierByFeature    Json       @default("{}")
   embeddingModel   String?
   enabledFeatures  Json       @default("{}")
   logRetentionDays Int        @default(30)

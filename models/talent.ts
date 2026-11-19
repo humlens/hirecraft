@@ -125,7 +125,10 @@ export async function listCandidates(
   });
   const page = rows.slice(0, f.limit);
 
+  const total = await prisma.tenantCandidate.count({ where });
+
   return {
+    total,
     candidates: page.map(toSummary),
     nextCursor: rows.length > f.limit ? page[page.length - 1].id : null,
   };
@@ -464,10 +467,13 @@ export async function importCandidates(
   return result;
 }
 
-export async function exportCandidatesCsv(ctx: TenantContext) {
+export async function exportCandidatesCsv(ctx: TenantContext, ids?: string[]) {
   const base = await visibleCandidateWhere(ctx);
   const rows = await prisma.tenantCandidate.findMany({
-    where: { AND: [base], teamId: ctx.team.id },
+    where: {
+      AND: [base, ...(ids?.length ? [{ id: { in: ids } }] : [])],
+      teamId: ctx.team.id,
+    },
     include: listInclude,
     orderBy: { createdAt: 'asc' },
     take: 10000,

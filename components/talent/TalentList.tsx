@@ -1,13 +1,14 @@
-import TalentSearch from '@/components/ai/TalentSearch';
+import TalentSearch, { type SearchResult } from '@/components/ai/TalentSearch';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 type Candidate = {
+  // list summary
   id: string;
   name: string;
   email: string;
@@ -40,13 +41,14 @@ const TalentList = ({ slug }: { slug: string }) => {
   if (tagId) params.set('tagId', tagId);
   if (poolId) params.set('poolId', poolId);
 
-  const list = useApi<{ candidates: Candidate[] }>(
+  const list = useApi<{ candidates: Candidate[]; total: number }>(
     `/api/teams/${slug}/talent?${params}`
   );
   const pools = useApi<Pool[]>(`/api/teams/${slug}/talent/pools`);
   const tags = useApi<Tag[]>(`/api/teams/${slug}/talent/tags`);
   const [csv, setCsv] = useState('');
   const [dups, setDups] = useState<Dup[] | null>(null);
+  const [dupCount, setDupCount] = useState(0);
   const [newPool, setNewPool] = useState('');
 
   const importCsv = async () => {
@@ -93,6 +95,7 @@ const TalentList = ({ slug }: { slug: string }) => {
 
     toast.success(t('merged', 'Merged.'));
     setDups(null);
+    setDupCount((n) => Math.max(0, n - 1));
     list.refresh();
   };
 
@@ -110,107 +113,346 @@ const TalentList = ({ slug }: { slug: string }) => {
     pools.refresh();
   };
 
+  const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [now] = useState(() => Date.now());
+  const [showImport, setShowImport] = useState(false);
+  const [showPoolInput, setShowPoolInput] = useState(false);
+  const canMerge = can('candidates.update');
+
+  useEffect(() => {
+    if (canMerge) {
+      send<Dup[]>(`/api/teams/${slug}/talent/duplicates`, 'GET').then((r) => {
+        if (r.ok) setDupCount(r.data!.length);
+      });
+    }
+  }, [slug, canMerge]);
+
+  const toggle = (id: string) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const ago = (d?: string | null) => {
+    if (!d) return null;
+
+    const days = Math.floor((now - new Date(d).getTime()) / 86400000);
+
+    return days < 1
+      ? t('today', 'Today')
+      : days < 14
+        ? `${days}d`
+        : days < 60
+          ? `${Math.floor(days / 7)}w`
+          : `${Math.floor(days / 30)}mo`;
+  };
+
+  const check = (id: string, name: string) => (
+    <input
+      type="checkbox"
+      className="checkbox mt-1"
+      aria-label={`${t('select', 'Select')} ${name}`}
+      checked={picked.includes(id)}
+      onChange={() => toggle(id)}
+    />
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto text-xl font-medium">{t('talent', 'Talent')}</h2>
-        {can('candidates.export') && (
-          <a className="btn btn-sm" href={`/api/teams/${slug}/talent/export`}>
-            {t('export-csv', 'Export CSV')}
-          </a>
-        )}
-        {can('candidates.update') && (
-          <button type="button" className="btn btn-sm" onClick={findDups}>
-            {t('find-duplicates', 'Find duplicates')}
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="mr-auto">
+          <h2 className="font-display text-3xl font-bold">
+            {t('talent-search', 'Talent search')}
+          </h2>
+          <p className="text-sm opacity-70">
+            {`${(list.data?.total ?? 0).toLocaleString()} ${t('talent-visible', "candidates you're allowed to see")} · ${t('talent-modes', 'keyword + semantic + filters')}`}
+          </p>
+        </div>
+        {can('candidates.import') && (
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setShowImport((v) => !v)}
+          >
+            {t('import-csv-short', 'Import CSV')}
           </button>
+        )}
+        {can('candidates.export') && (
+          <a
+            className={`btn btn-outline ${picked.length ? '' : 'btn-disabled'}`}
+            aria-disabled={!picked.length}
+            href={`/api/teams/${slug}/talent/export?ids=${picked.join(',')}`}
+          >
+            {t('export-selected', 'Export selected')}
+          </a>
         )}
       </div>
 
       {can('candidates.search') && (
-        <TalentSearch slug={slug} canAI={can('ai.use')} />
+        <TalentSearch
+          slug={slug}
+          canAI={can('ai.use')}
+          onResults={(r) => {
+            setResults(r);
+            setPicked([]);
+          }}
+        />
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <input
-          className="input  input-sm"
-          placeholder="Name or email"
-          aria-label={t('search', 'Search')}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <select
-          className="select  select-sm"
-          aria-label={t('tag', 'Tag')}
-          value={tagId}
-          onChange={(e) => setTagId(e.target.value)}
-        >
-          <option value="">{t('all-tags', 'All tags')}</option>
-          {(tags.data ?? []).map((x) => (
-            <option key={x.id} value={x.id}>
-              {x.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="select  select-sm"
-          aria-label={t('pool', 'Pool')}
-          value={poolId}
-          onChange={(e) => setPoolId(e.target.value)}
-        >
-          <option value="">{t('all-pools', 'All pools')}</option>
-          {(pools.data ?? []).map((x) => (
-            <option
-              key={x.id}
-              value={x.id}
-            >{`${x.name} (${x._count.members})`}</option>
-          ))}
-        </select>
-      </div>
+      {showImport && can('candidates.import') && (
+        <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+          <h3 className="font-display font-semibold">
+            {t('import-csv', 'Import candidates (CSV)')}
+          </h3>
+          <p className="text-xs opacity-70">
+            {t(
+              'import-hint',
+              'Header: name,email,phone,tags. Tags separated by ; (max 1000 rows). The selected pool receives the imported candidates.'
+            )}
+          </p>
+          <textarea
+            className="textarea w-full font-mono text-xs"
+            rows={4}
+            aria-label={t('csv-content', 'CSV content')}
+            value={csv}
+            onChange={(e) => setCsv(e.target.value)}
+          />
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label={t('csv-file', 'CSV file')}
+            className="file-input file-input-sm"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
 
-      {list.isLoading && <Loading />}
-      {list.isError && <Error message={list.isError.message} />}
-      {list.data && (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
-            <thead>
-              <tr>
-                <th>{t('name')}</th>
-                <th>{t('email')}</th>
-                <th>{t('source', 'Source')}</th>
-                <th>{t('tags', 'Tags')}</th>
-                <th>{t('applications', 'Applications')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.data.candidates.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <Link
-                      className="link"
-                      href={`/teams/${slug}/talent/${c.id}`}
-                    >
-                      {c.name}
-                    </Link>
-                  </td>
-                  <td>{c.email}</td>
-                  <td>{c.source}</td>
-                  <td>{c.tags.map((x) => x.name).join(', ')}</td>
-                  <td>{c.applicationCount}</td>
-                </tr>
+              if (f) setCsv(await f.text());
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            disabled={!csv.trim()}
+            onClick={importCsv}
+          >
+            {t('import', 'Import')}
+          </button>
+        </section>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+        <aside className="space-y-4">
+          <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+            <h3 className="font-display font-semibold">
+              {t('talent-pools', 'Talent pools')}
+            </h3>
+            <ul className="space-y-1 text-sm">
+              {(pools.data ?? []).map((x) => (
+                <li key={x.id}>
+                  <button
+                    type="button"
+                    aria-pressed={poolId === x.id}
+                    className={`flex w-full justify-between rounded-lg px-2 py-1 text-left hover:bg-base-200 ${
+                      poolId === x.id ? 'bg-primary/10 font-semibold' : ''
+                    }`}
+                    onClick={() => setPoolId(poolId === x.id ? '' : x.id)}
+                  >
+                    <span>{x.name}</span>
+                    <span className="opacity-60">{x._count.members}</span>
+                  </button>
+                </li>
               ))}
-            </tbody>
-          </table>
-          {list.data.candidates.length === 0 && (
-            <p className="py-4 text-sm opacity-70">
-              {t('no-candidates', 'No candidates found.')}
-            </p>
+              {pools.data?.length === 0 && (
+                <li className="opacity-60">{t('no-pools', 'No pools yet.')}</li>
+              )}
+            </ul>
+            {can('candidates.update') &&
+              (showPoolInput ? (
+                <div className="flex gap-2">
+                  <input
+                    className="input input-sm min-w-0 flex-1"
+                    placeholder="New pool name"
+                    aria-label={t('new-pool', 'New pool name')}
+                    value={newPool}
+                    onChange={(e) => setNewPool(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={newPool.trim().length < 2}
+                    onClick={createPool}
+                  >
+                    {t('create', 'Create')}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-outline w-full"
+                  onClick={() => setShowPoolInput(true)}
+                >
+                  {`+ ${t('new-pool-btn', 'New pool')}`}
+                </button>
+              ))}
+          </section>
+
+          {dupCount > 0 && (
+            <section className="space-y-2 rounded-2xl border border-warning/50 bg-warning/10 p-5">
+              <h3 className="font-display font-semibold">
+                {`${dupCount} ${t('possible-duplicates-lower', 'possible duplicates')}`}
+              </h3>
+              <p className="text-sm opacity-80">
+                {t(
+                  'duplicates-note',
+                  'Same email or phone across imports. Merging keeps all applications and notes.'
+                )}
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={findDups}
+              >
+                {t('review-merge', 'Review & merge')}
+              </button>
+            </section>
+          )}
+        </aside>
+
+        <div className="space-y-3">
+          {!results && (
+            <div className="flex flex-wrap gap-2">
+              <input
+                className="input input-sm"
+                placeholder="Name or email"
+                aria-label={t('filter-name', 'Filter by name or email')}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <select
+                className="select select-sm"
+                aria-label={t('tag', 'Tag')}
+                value={tagId}
+                onChange={(e) => setTagId(e.target.value)}
+              >
+                <option value="">{t('all-tags', 'All tags')}</option>
+                {(tags.data ?? []).map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {results ? (
+            <>
+              {results.length === 0 && (
+                <p className="text-sm opacity-70">
+                  {t('no-candidates', 'No candidates found.')}
+                </p>
+              )}
+              <ul className="space-y-3">
+                {results.map((r) => (
+                  <li
+                    key={r.candidateId}
+                    className="flex gap-3 rounded-2xl border bg-base-100 p-4"
+                  >
+                    {check(r.candidateId, r.name)}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Link
+                          className="font-display font-semibold hover:underline"
+                          href={`/teams/${slug}/talent/${r.candidateId}`}
+                        >
+                          {r.name}
+                        </Link>
+                        <span className="text-sm opacity-70">
+                          {[
+                            r.years != null ? `${r.years} yrs` : null,
+                            r.location,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      </div>
+                      <p className="text-sm">{r.headline}</p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span className="rounded-full bg-success/15 px-2.5 py-1 font-semibold text-success">
+                          {`${t('relevance', 'Relevance')} ${r.scores?.relevance ?? Math.round(r.score * 1000) / 10}`}
+                        </span>
+                        {r.scores?.keyword != null && (
+                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                            {`${t('keyword', 'Keyword')} ${r.scores.keyword}`}
+                          </span>
+                        )}
+                        {r.scores?.semantic != null && (
+                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                            {`${t('semantic', 'Semantic')} ${r.scores.semantic}`}
+                          </span>
+                        )}
+                        {ago(r.lastActiveAt) && (
+                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                            {`${t('last-active', 'Last active')} ${ago(r.lastActiveAt)}`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <>
+              {list.isLoading && <Loading />}
+              {list.isError && <Error message={list.isError.message} />}
+              <ul className="space-y-3">
+                {(list.data?.candidates ?? []).map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex gap-3 rounded-2xl border bg-base-100 p-4"
+                  >
+                    {check(c.id, c.name)}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Link
+                          className="font-display font-semibold hover:underline"
+                          href={`/teams/${slug}/talent/${c.id}`}
+                        >
+                          {c.name}
+                        </Link>
+                        <span className="text-sm opacity-70">
+                          {`${c.applicationCount} ${t('applications', 'Applications').toLowerCase()}`}
+                        </span>
+                      </div>
+                      <p className="text-sm opacity-70">
+                        {`${c.email} · ${c.source}`}
+                      </p>
+                      {c.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
+                          {c.tags.map((x) => (
+                            <span
+                              key={x.id}
+                              className="rounded-full bg-base-200 px-2.5 py-1"
+                            >
+                              {x.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {list.data?.candidates.length === 0 && (
+                <p className="py-4 text-sm opacity-70">
+                  {t('no-candidates', 'No candidates found.')}
+                </p>
+              )}
+            </>
           )}
         </div>
-      )}
+      </div>
 
       {dups && (
-        <section className="space-y-2 rounded border p-3">
-          <h3 className="font-semibold">
+        <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+          <h3 className="font-display font-semibold">
             {t('possible-duplicates', 'Possible duplicates')}
           </h3>
           {dups.length === 0 && (
@@ -242,67 +484,6 @@ const TalentList = ({ slug }: { slug: string }) => {
               ))}
             </div>
           ))}
-        </section>
-      )}
-
-      {can('candidates.import') && (
-        <section className="space-y-2 rounded border p-3">
-          <h3 className="font-semibold">
-            {t('import-csv', 'Import candidates (CSV)')}
-          </h3>
-          <p className="text-xs opacity-70">
-            {t(
-              'import-hint',
-              'Header: name,email,phone,tags. Tags separated by ; (max 1000 rows). The selected pool receives the imported candidates.'
-            )}
-          </p>
-          <textarea
-            className="textarea  w-full font-mono text-xs"
-            rows={4}
-            aria-label={t('csv-content', 'CSV content')}
-            value={csv}
-            onChange={(e) => setCsv(e.target.value)}
-          />
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            aria-label={t('csv-file', 'CSV file')}
-            className="file-input  file-input-sm"
-            onChange={async (e) =>
-              e.target.files?.[0] && setCsv(await e.target.files[0].text())
-            }
-          />
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            disabled={!csv.trim()}
-            onClick={importCsv}
-          >
-            {t('import', 'Import')}
-          </button>
-        </section>
-      )}
-
-      {can('candidates.update') && (
-        <section className="space-y-2 rounded border p-3">
-          <h3 className="font-semibold">{t('talent-pools', 'Talent pools')}</h3>
-          <div className="flex gap-2">
-            <input
-              className="input  input-sm"
-              placeholder="New pool name"
-              aria-label={t('new-pool', 'New pool name')}
-              value={newPool}
-              onChange={(e) => setNewPool(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn btn-sm"
-              disabled={newPool.trim().length < 2}
-              onClick={createPool}
-            >
-              {t('create', 'Create')}
-            </button>
-          </div>
         </section>
       )}
     </div>

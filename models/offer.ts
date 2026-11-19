@@ -20,7 +20,15 @@ const include = {
   application: {
     select: {
       id: true,
-      job: { select: { id: true, title: true } },
+      job: {
+        select: {
+          id: true,
+          title: true,
+          salaryMin: true,
+          salaryMax: true,
+          salaryCurrency: true,
+        },
+      },
       tenantCandidate: {
         select: { id: true, name: true, email: true, userId: true },
       },
@@ -58,13 +66,47 @@ async function names(ids: string[]) {
   return new Map(users.map((u) => [u.id, u.name]));
 }
 
+/** Compares the fixed pay with the job's approved salary band (advisory only). */
+export function bandCheck(
+  fixed: number,
+  job: { salaryMin: number | null; salaryMax: number | null },
+  expected: number | null
+) {
+  const { salaryMin: min, salaryMax: max } = job;
+
+  if (min == null && max == null) {
+    return { status: 'NONE' as const, min, max, expected };
+  }
+
+  const status =
+    min != null && fixed < min
+      ? ('BELOW' as const)
+      : max != null && fixed > max
+        ? ('ABOVE' as const)
+        : ('WITHIN' as const);
+
+  return { status, min, max, expected };
+}
+
 async function toView(o: Row) {
   const people = await names(o.approvals.map((a) => a.approverUserId));
+  const profile = o.application.tenantCandidate.userId
+    ? await prisma.candidateProfile.findUnique({
+        where: { userId: o.application.tenantCandidate.userId },
+        select: { expectedSalary: true },
+      })
+    : null;
 
   return {
     id: o.id,
     applicationId: o.applicationId,
-    job: o.application.job,
+    job: { id: o.application.job.id, title: o.application.job.title },
+    band: bandCheck(
+      o.fixed,
+      o.application.job,
+      profile?.expectedSalary ?? null
+    ),
+    templateKey: o.templateKey,
     candidate: {
       id: o.application.tenantCandidate.id,
       name: o.application.tenantCandidate.name,
@@ -140,6 +182,7 @@ type OfferInput = {
   startDate?: Date | null;
   expiresAt?: Date | null;
   terms?: string | null;
+  templateKey?: string | null;
 };
 
 export async function createOffer(

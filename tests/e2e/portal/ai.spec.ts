@@ -102,6 +102,7 @@ test('AI settings: test the connection, switch a feature off and save', async ({
   await page.getByRole('button', { name: 'Test connection' }).click();
   await expect(page.getByText('Connection works.')).toBeVisible();
 
+  await page.getByLabel('Model tier: match.assess').selectOption('best');
   await page.getByLabel('Candidate communication drafts').uncheck();
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
@@ -112,6 +113,9 @@ test('AI settings: test the connection, switch a feature off and save', async ({
   });
   expect((cfg.enabledFeatures as Record<string, boolean>)['comms.draft']).toBe(
     false
+  );
+  expect((cfg.tierByFeature as Record<string, string>)['match.assess']).toBe(
+    'best'
   );
   // the key field never shows a secret
   await expect(page.getByLabel('Your own API key (optional)')).toHaveValue('');

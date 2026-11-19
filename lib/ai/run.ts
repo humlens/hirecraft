@@ -182,7 +182,8 @@ export async function runAIFeature<K extends FeatureKey>(
   const prompt = await getPrompt(featureKey);
   const system = prompt.system;
   const userPrompt = renderPrompt(prompt.body, vars);
-  const model = resolved.models[feature.tier];
+  const model =
+    resolved.models[resolved.tierByFeature[featureKey] ?? feature.tier];
   const started = Date.now();
   let lastError: unknown;
   let hint = '';

@@ -169,6 +169,9 @@ const env = {
   // Shared secret for POST /api/internal/tick (worker / scheduler)
   cronSecret: process.env.CRON_SECRET || '',
 
+  // Where "Talk to sales" leads on the billing page (mailto: or https:)
+  salesContactUrl: process.env.SALES_CONTACT_URL || '',
+
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
 
   stripe: {

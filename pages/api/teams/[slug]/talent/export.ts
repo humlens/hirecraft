@@ -12,7 +12,13 @@ export default route({
 
     enforceRateLimit(`export:${ctx.team.id}:${ctx.user.id}`, 10, 60 * 60);
 
-    const { csv, count } = await exportCandidatesCsv(ctx);
+    const raw = typeof req.query.ids === 'string' ? req.query.ids : '';
+    const ids = raw
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 500);
+    const { csv, count } = await exportCandidatesCsv(ctx, ids);
 
     // Exporting personal data is always audited
     sendAudit({

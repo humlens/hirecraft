@@ -19,11 +19,19 @@ export type ProviderName = (typeof PROVIDER_NAMES)[number] | 'fake';
 
 /** Default model per provider and tier. Override per portal or with AI_MODEL_FAST / AI_MODEL_STANDARD. */
 export const DEFAULT_MODELS: Record<string, Record<Tier, string>> = {
-  openai: { fast: 'gpt-4o-mini', standard: 'gpt-4o' },
-  anthropic: { fast: 'claude-haiku-5-5', standard: 'claude-sonnet-5-5' },
-  gemini: { fast: 'gemini-2.0-flash', standard: 'gemini-2.5-pro' },
-  openai_compatible: { fast: 'default', standard: 'default' },
-  fake: { fast: 'fake-fast', standard: 'fake-standard' },
+  openai: { fast: 'gpt-4o-mini', standard: 'gpt-4o', best: 'gpt-4.1' },
+  anthropic: {
+    fast: 'claude-haiku-5-5',
+    standard: 'claude-sonnet-5-5',
+    best: 'claude-opus-5-5',
+  },
+  gemini: {
+    fast: 'gemini-2.0-flash',
+    standard: 'gemini-2.5-flash',
+    best: 'gemini-2.5-pro',
+  },
+  openai_compatible: { fast: 'default', standard: 'default', best: 'default' },
+  fake: { fast: 'fake-fast', standard: 'fake-standard', best: 'fake-best' },
 };
 
 export type ResolvedAI = {
@@ -32,6 +40,8 @@ export type ResolvedAI = {
   models: Record<Tier, string>;
   /** true when the portal's own API key is used (no platform credits are charged) */
   ownKey: boolean;
+  /** per-feature tier chosen by the portal (defaults come from the feature) */
+  tierByFeature: Record<string, Tier>;
   enabledFeatures: Record<string, boolean>;
   logRetentionDays: number;
   monthlyCredits: number;
@@ -172,7 +182,10 @@ export async function resolveAI(teamId: string | null): Promise<ResolvedAI> {
       fast: tiers.fast || process.env.AI_MODEL_FAST || defaults.fast,
       standard:
         tiers.standard || process.env.AI_MODEL_STANDARD || defaults.standard,
+      best: tiers.best || process.env.AI_MODEL_BEST || defaults.best,
     },
+    tierByFeature:
+      ((tenant?.tierByFeature ?? {}) as Record<string, Tier>) || {},
     ownKey: useTenantKey,
     // tenant settings (features, retention, credits) apply even with the platform key
     enabledFeatures:

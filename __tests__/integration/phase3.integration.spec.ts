@@ -3268,6 +3268,7 @@ suite('phase 3 (integration)', () => {
       expect(ok.status).toBe(200);
       expect(Object.keys(ok.json.data).sort()).toEqual([
         'aiLogsDeleted',
+        'automationsFired',
         'jobsClosed',
         'jobsPublished',
         'offersExpired',

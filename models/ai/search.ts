@@ -123,6 +123,7 @@ export async function searchTalent(
       headline: true,
       location: true,
       preferredLocations: true,
+      updatedAt: true,
       skills: { select: { skill: true } },
       experiences: {
         select: { startDate: true, endDate: true, current: true },
@@ -170,6 +171,17 @@ export async function searchTalent(
   const prof = new Map(profiles.map((p) => [p.userId, p]));
   const ftsRank = new Map(fts.map((x, i) => [x.userId, i + 1]));
   const vecRank = new Map(vec.map((x, i) => [x.userId, i + 1]));
+  const maxFts = Math.max(1e-9, ...fts.map((x) => x.r));
+  const ftsScore = new Map(
+    fts.map((x) => [x.userId, Math.round((x.r / maxFts) * 100)])
+  );
+  const vecScore = new Map(
+    vec.map((x) => [
+      x.userId,
+      Math.max(0, Math.min(100, Math.round(x.sim * 100))),
+    ])
+  );
+  const maxBoost = Math.max(1, ...boosts.map((b) => b.boost));
 
   return {
     filters,
@@ -181,6 +193,16 @@ export async function searchTalent(
       >;
       const p = prof.get(userId);
       const b = boosts.find((x) => x.userId === userId);
+      const keyword = ftsScore.get(userId) ?? null;
+      const semantic = vecScore.get(userId) ?? null;
+      const fit = b ? Math.round((b.boost / maxBoost) * 100) : null;
+      // Blend of the signals that exist for this candidate (all 0-100)
+      const parts = [keyword, semantic, fit].filter(
+        (v): v is number => v != null
+      );
+      const relevance = parts.length
+        ? Math.round(parts.reduce((a, v) => a + v, 0) / parts.length)
+        : 0;
 
       return {
         candidateId: c.id,
@@ -192,6 +214,8 @@ export async function searchTalent(
         matchedSkills: b?.matched ?? 0,
         years: b?.years ?? null,
         score: Math.round(score * 10000) / 10000,
+        scores: { relevance, keyword, semantic, fit },
+        lastActiveAt: p?.updatedAt ?? null,
         why: {
           fullText: ftsRank.get(userId) ?? null,
           vector: vecRank.get(userId) ?? null,

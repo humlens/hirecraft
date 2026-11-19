@@ -144,6 +144,9 @@ test('integrations page: apps need a plan, the custom domain shows its DNS recor
   await expect(
     page.getByText('Not included in your plan').first()
   ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Pipeline & automation' })
+  ).toBeVisible();
 
   // Free plan: the domain is refused with an upgrade hint
   const no = await page.request.post(`/api/teams/${slug}/domain`, {

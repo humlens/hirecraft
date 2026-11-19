@@ -1,6 +1,7 @@
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,8 @@ type Tenant = {
   paymentIssue: boolean;
   readOnly: boolean;
   usage: Record<string, number>;
+  limits: Record<string, number | null>;
+  aiCreditsUsed: number;
 };
 type Tenants = {
   total: number;
@@ -53,8 +56,16 @@ type Audit = {
   createdAt: string;
 }[];
 
+const compact = (n: number) =>
+  n >= 1_000_000
+    ? `${Math.round(n / 100_000) / 10} M`
+    : n >= 1000
+      ? `${Math.round(n / 100) / 10} K`
+      : String(n);
+
 const TenantsTab = () => {
   const { t } = useTranslation('common');
+  const audit = useApi<Audit>('/api/admin/audit');
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
   const { data, isError, isLoading, refresh } = useApi<Tenants>(
@@ -77,6 +88,7 @@ const TenantsTab = () => {
     if (!r.ok) toast.error(r.error as string);
 
     refresh();
+    audit.refresh();
   };
 
   const suspend = (tn: Tenant) => {
@@ -88,113 +100,169 @@ const TenantsTab = () => {
     if (reason !== undefined) patch(tn.id, { status: 'SUSPENDED', reason });
   };
 
+  const lim = (v: number | null | undefined) => (v == null ? '∞' : v);
+  const pctOf = (tn: Tenant) => {
+    const cap = tn.limits.aiCreditsPerMonth;
+
+    return cap ? Math.min(100, Math.round((tn.aiCreditsUsed / cap) * 100)) : 0;
+  };
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          [data.stats.activePortals, t('admin-active', 'Active portals')],
-          [data.stats.paidPlans, t('admin-paid', 'Paid plans')],
+          [data.stats.activePortals, t('admin-active', 'Active portals'), ''],
+          [data.stats.paidPlans, t('admin-paid', 'Paid plans'), ''],
           [
-            data.stats.aiCreditsThisMonth.toLocaleString(),
-            t('admin-credits', 'AI credits (month)'),
+            compact(data.stats.aiCreditsThisMonth),
+            t('admin-credits', 'AI credits used (month)'),
+            '',
           ],
-          [data.stats.paymentIssues, t('admin-issues', 'Payment issues')],
-        ].map(([n, label]) => (
-          <div key={label as string} className="rounded-xl border p-3">
-            <div className="text-2xl font-semibold">{n}</div>
-            <div className="text-xs opacity-70">{label}</div>
+          [
+            data.stats.paymentIssues,
+            t('admin-issues', 'Payment issues'),
+            data.stats.paymentIssues ? 'text-error' : '',
+          ],
+        ].map(([n, label, cls]) => (
+          <div
+            key={label as string}
+            className="rounded-2xl border bg-base-100 p-5"
+          >
+            <div className="text-sm opacity-70">{label}</div>
+            <div className={`font-display text-4xl font-bold ${cls}`}>{n}</div>
           </div>
         ))}
       </div>
-      <input
-        type="search"
-        className="input  input-sm w-full max-w-xs"
-        aria-label={t('admin-search', 'Search tenants')}
-        placeholder={t('admin-search-ph', 'Search name or slug')}
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-      <div className="overflow-x-auto">
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>{t('admin-portal', 'Portal')}</th>
-              <th>{t('admin-owner', 'Owner')}</th>
-              <th>{t('admin-plan', 'Plan')}</th>
-              <th>{t('admin-usage', 'Jobs / seats')}</th>
-              <th>{t('admin-status', 'Status')}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {data.tenants.map((tn) => (
-              <tr key={tn.id}>
-                <td>
-                  <strong>{tn.name}</strong>
-                  <div className="text-xs opacity-60">{tn.slug}</div>
-                </td>
-                <td>{tn.owner?.email ?? '-'}</td>
-                <td>
-                  <select
-                    className="select  select-xs"
-                    aria-label={`${tn.name} plan`}
-                    value={tn.planOverride ?? ''}
-                    onChange={(e) =>
-                      patch(tn.id, { planOverride: e.target.value || null })
-                    }
-                  >
-                    <option value="">
-                      {tn.planOverride
-                        ? t('admin-no-override', 'No override')
-                        : `${tn.planLabel} (billing)`}
-                    </option>
-                    {['free', 'starter', 'professional', 'enterprise'].map(
-                      (p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </td>
-                <td>
-                  {tn.usage.activeJobs} / {tn.usage.seats}
-                </td>
-                <td>
-                  <span
-                    className={`badge badge-sm ${tn.status === 'SUSPENDED' ? 'badge-error' : tn.paymentIssue ? 'badge-warning' : 'badge-success'}`}
-                  >
-                    {tn.status === 'SUSPENDED'
-                      ? 'Suspended'
-                      : tn.paymentIssue
-                        ? 'Payment overdue'
-                        : 'Active'}
-                  </span>
-                </td>
-                <td className="text-right">
-                  {tn.status === 'SUSPENDED' ? (
-                    <button
-                      type="button"
-                      className="btn btn-xs"
-                      onClick={() => patch(tn.id, { status: 'ACTIVE' })}
-                    >
-                      {t('admin-activate', 'Activate')}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-outline btn-error"
-                      onClick={() => suspend(tn)}
-                    >
-                      {t('admin-suspend', 'Suspend')}
-                    </button>
-                  )}
-                </td>
+
+      <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-display text-lg font-semibold">
+            {t('admin-all-portals', 'All portals')}
+          </h3>
+          <input
+            type="search"
+            className="input w-full max-w-xs"
+            aria-label={t('admin-search', 'Search tenants')}
+            placeholder={t('admin-search-ph', 'Search name or slug')}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr className="text-xs uppercase">
+                <th>{t('admin-portal', 'Portal')}</th>
+                <th>{t('admin-owner', 'Owner')}</th>
+                <th>{t('admin-plan', 'Plan')}</th>
+                <th>{t('admin-usage', 'Jobs / seats')}</th>
+                <th>{t('admin-ai-credits', 'AI credits')}</th>
+                <th>{t('admin-status', 'Status')}</th>
+                <th className="text-right">{t('admin-action', 'Action')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {data.tenants.map((tn) => (
+                <tr key={tn.id}>
+                  <td>
+                    <strong>{tn.name}</strong>
+                    <div className="text-xs opacity-60">{tn.slug}</div>
+                  </td>
+                  <td title={tn.owner?.email}>{tn.owner?.name ?? '-'}</td>
+                  <td>
+                    <select
+                      className="select select-sm"
+                      aria-label={`${tn.name} plan`}
+                      value={tn.planOverride ?? ''}
+                      onChange={(e) =>
+                        patch(tn.id, { planOverride: e.target.value || null })
+                      }
+                    >
+                      <option value="">
+                        {tn.planOverride
+                          ? t('admin-no-override', 'No override')
+                          : `${tn.planLabel} (billing)`}
+                      </option>
+                      {['free', 'starter', 'professional', 'enterprise'].map(
+                        (p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </td>
+                  <td>
+                    {`${tn.usage.activeJobs}/${lim(tn.limits.activeJobs)} · ${tn.usage.seats}/${lim(tn.limits.seats)}`}
+                  </td>
+                  <td>{`${pctOf(tn)}%`}</td>
+                  <td>
+                    <span
+                      className={`badge ${tn.status === 'SUSPENDED' ? 'badge-error badge-soft' : tn.paymentIssue ? 'badge-warning badge-soft' : 'badge-success badge-soft'}`}
+                    >
+                      {tn.status === 'SUSPENDED'
+                        ? 'Suspended'
+                        : tn.paymentIssue
+                          ? 'Payment overdue'
+                          : 'Active'}
+                    </span>
+                  </td>
+                  <td className="text-right">
+                    {tn.status === 'SUSPENDED' ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline btn-primary"
+                        onClick={() => patch(tn.id, { status: 'ACTIVE' })}
+                      >
+                        {t('admin-activate', 'Activate')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline btn-error"
+                        onClick={() => suspend(tn)}
+                      >
+                        {t('admin-suspend', 'Suspend')}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+        <h3 className="font-display text-lg font-semibold">
+          {t('admin-recent-audit', 'Recent platform audit events')}
+        </h3>
+        <ul className="space-y-1 text-sm">
+          {(audit.data ?? []).slice(0, 5).map((l) => (
+            <li key={l.id} className="flex flex-wrap gap-4">
+              <span className="font-mono text-xs opacity-60">
+                {new Date(l.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              <span>
+                <strong>{l.action}</strong>{' '}
+                <span className="opacity-70">
+                  {Object.entries(l.details ?? {})
+                    .map(([k, v]) => `${k}: ${String(v)}`)
+                    .join(' · ')}
+                </span>
+              </span>
+            </li>
+          ))}
+          {audit.data?.length === 0 && (
+            <li className="opacity-70">
+              {t('admin-no-audit', 'No events yet.')}
+            </li>
+          )}
+        </ul>
+      </section>
     </div>
   );
 };
@@ -428,41 +496,58 @@ const TABS = [
 const PlatformAdmin = () => {
   const { t } = useTranslation('common');
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('tenants');
+  const title = TABS.find(([k]) => k === tab)?.[1] ?? '';
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">
-          {t('admin-title', 'Platform admin')}
-        </h1>
-        <p className="text-sm opacity-70">
-          {t(
-            'admin-note',
-            'Every action here is written to the platform audit log.'
-          )}
-        </p>
-      </div>
-      <div
-        role="tablist"
-        className="flex flex-nowrap gap-1 overflow-x-auto border-b"
-      >
-        {TABS.map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={tab === k}
-            className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === k ? 'border-primary' : 'border-transparent opacity-70'}`}
-            onClick={() => setTab(k)}
+    <div className="min-h-screen bg-base-200">
+      <header className="bg-[#0f172a] text-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+          <h1 className="flex items-center gap-2 font-display text-lg font-bold">
+            <span
+              aria-hidden
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm"
+            >
+              {'H'}
+            </span>
+            {`Hirecraft · ${t('admin-title', 'Platform admin')}`}
+          </h1>
+          <div
+            role="tablist"
+            className="flex flex-nowrap gap-1 overflow-x-auto text-sm"
           >
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === 'tenants' && <TenantsTab />}
-      {tab === 'plans' && <PlansTab />}
-      {tab === 'ai' && <AiTab />}
-      {tab === 'audit' && <AuditTab />}
+            {TABS.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={tab === k}
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 ${tab === k ? 'bg-white/10 font-semibold' : 'opacity-70 hover:opacity-100'}`}
+                onClick={() => setTab(k)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Link className="ml-auto text-sm opacity-80" href="/dashboard">
+            {t('admin-back', 'Back to portals')}
+          </Link>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+        <div>
+          <h2 className="font-display text-3xl font-bold">{title}</h2>
+          <p className="text-sm opacity-70">
+            {t(
+              'admin-note',
+              'Every action here is written to the platform audit log.'
+            )}
+          </p>
+        </div>
+        {tab === 'tenants' && <TenantsTab />}
+        {tab === 'plans' && <PlansTab />}
+        {tab === 'ai' && <AiTab />}
+        {tab === 'audit' && <AuditTab />}
+      </main>
     </div>
   );
 };

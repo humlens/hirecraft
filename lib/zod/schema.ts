@@ -597,6 +597,10 @@ const offerFields = {
     .nullable()
     .optional(),
   terms: z.string().trim().max(5000).nullable().optional(),
+  templateKey: z
+    .enum(['india-full-time-v4', 'india-contract-v2', 'global-full-time-v1'])
+    .nullable()
+    .optional(),
 };
 
 export const createOfferSchema = z.object({
@@ -653,6 +657,7 @@ export const analyticsQuerySchema = z.object({
   from: isoDate.transform((v) => new Date(v)).optional(),
   to: isoDate.transform((v) => new Date(v)).optional(),
   jobId: id64.optional(),
+  recruiterId: id64.optional(),
 });
 
 export const createStageSchema = z.object({

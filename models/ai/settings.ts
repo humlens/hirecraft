@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { encryptSecret, keyHint } from '@/lib/ai/crypto';
 import { DEFAULT_MODELS, PROVIDER_NAMES, resolveAI } from '@/lib/ai/config';
 import { FEATURES, FEATURE_KEYS } from '@/lib/ai/features';
+import { getPrompt } from '@/lib/ai/prompts';
 import { creditsUsedThisMonth } from '@/lib/ai/run';
 import { ApiError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
@@ -84,7 +85,11 @@ export const aiSettingsSchema = z.object({
     .object({
       fast: z.string().trim().max(100).optional(),
       standard: z.string().trim().max(100).optional(),
+      best: z.string().trim().max(100).optional(),
     })
+    .default({}),
+  tierByFeature: z
+    .record(z.string(), z.enum(['fast', 'standard', 'best']))
     .default({}),
   enabledFeatures: z.record(z.string(), z.boolean()).default({}),
   logRetentionDays: z.number().int().min(1).max(365).default(30),
@@ -104,6 +109,7 @@ export async function getAiSettings(ctx: TenantContext) {
     hasOwnKey: !!row?.encryptedApiKey,
     keyHint: row?.keyHint ?? null,
     modelByTier: (row?.modelByTier ?? {}) as Record<string, string>,
+    tierByFeature: (row?.tierByFeature ?? {}) as Record<string, string>,
     enabledFeatures: Object.fromEntries(
       FEATURE_KEYS.map((k) => [
         k,
@@ -118,11 +124,23 @@ export async function getAiSettings(ctx: TenantContext) {
     },
     providers: PROVIDER_NAMES,
     defaultModels: DEFAULT_MODELS,
-    features: FEATURE_KEYS.map((k) => ({
-      key: k,
-      label: FEATURES[k].label,
-      credits: FEATURES[k].credits,
-    })),
+    features: await Promise.all(
+      FEATURE_KEYS.map(async (k) => {
+        const p = await getPrompt(k).catch(() => null);
+
+        return {
+          key: k,
+          label: FEATURES[k].label,
+          credits: FEATURES[k].credits,
+          defaultTier: FEATURES[k].tier,
+          tier:
+            ((row?.tierByFeature ?? {}) as Record<string, string>)[k] ??
+            FEATURES[k].tier,
+          roles: FEATURES[k].roles,
+          prompt: p ? `${k.replace('.', '-')} v${p.version}` : k,
+        };
+      })
+    ),
   };
 }
 
@@ -140,9 +158,10 @@ export async function saveAiSettings(
     throw new ApiError(422, 'OpenAI-compatible providers need a base URL.');
   }
 
-  const unknown = Object.keys(input.enabledFeatures).filter(
-    (k) => !(k in FEATURES)
-  );
+  const unknown = [
+    ...Object.keys(input.enabledFeatures),
+    ...Object.keys(input.tierByFeature),
+  ].filter((k) => !(k in FEATURES));
 
   if (unknown.length) {
     throw new ApiError(422, `Unknown feature: ${unknown[0]}`);
@@ -167,6 +186,7 @@ export async function saveAiSettings(
     provider: input.provider,
     baseUrl: input.baseUrl || null,
     modelByTier: input.modelByTier,
+    tierByFeature: input.tierByFeature,
     enabledFeatures: input.enabledFeatures,
     logRetentionDays: input.logRetentionDays,
     ...key,

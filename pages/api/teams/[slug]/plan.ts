@@ -10,6 +10,7 @@ import {
   DEFAULT_ENTITLEMENTS,
   getPlanDefinition,
 } from '@/lib/entitlements';
+import env from '@/lib/env';
 import { prisma } from '@/lib/prisma';
 import { requireTenantContext } from '@/lib/tenant';
 import { validateWithSchema } from '@/lib/zod';
@@ -42,6 +43,7 @@ export default route({
       data: {
         ...overview,
         limitLabels: LIMIT_LABELS,
+        salesUrl: env.salesContactUrl || null,
         plans,
         defaults: DEFAULT_ENTITLEMENTS,
         subscription: sub && {
