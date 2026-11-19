@@ -63,6 +63,7 @@ const publicJobSelect = {
   publishAt: true,
   createdAt: true,
   closesAt: true,
+  attributes: true,
   locations: { select: { city: true, region: true, country: true } },
   skills: { select: { skill: true, required: true } },
 } satisfies Prisma.JobSelect;

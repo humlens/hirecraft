@@ -13,6 +13,12 @@ import fetcher from '@/lib/fetcher';
 import { Button } from '@/components/ui/daisy';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
+import IndustryTemplatePicker from '@/components/healthcare/IndustryTemplatePicker';
+import {
+  getIndustryTemplate,
+  getJobTemplate,
+  type IndustryKey,
+} from '@/lib/industryTemplates';
 
 const STEPS = ['account', 'details', 'branding', 'done'] as const;
 
@@ -24,6 +30,8 @@ const OnboardingWizard = () => {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [template, setTemplate] = useState<IndustryKey>('general');
+  const [roles, setRoles] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: '',
     slug: '',
@@ -47,6 +55,22 @@ const OnboardingWizard = () => {
 
       return next;
     });
+
+  const pickTemplate = (key: IndustryKey) => {
+    const tpl = getIndustryTemplate(key);
+
+    if (!tpl) return;
+
+    setTemplate(key);
+    setRoles(tpl.jobs);
+    setForm((f) => ({
+      ...f,
+      industry: tpl.industry,
+      primaryColor: tpl.primaryColor,
+      heroTitle: tpl.key === 'general' ? '' : tpl.heroTitle,
+      heroSubtitle: tpl.key === 'general' ? '' : tpl.heroSubtitle,
+    }));
+  };
 
   const slugValue = slugify(form.slug);
   const { data: slugCheck } = useSWR<{ data: { available: boolean } }>(
@@ -72,6 +96,7 @@ const OnboardingWizard = () => {
         name: form.name.trim(),
         slug: slugify(form.slug),
         completeOnboarding: true,
+        template,
         profile: {
           companyName: form.name.trim(),
           website: form.website,
@@ -95,6 +120,15 @@ const OnboardingWizard = () => {
     if (!response.ok) {
       toast.error(json.error.message);
       return;
+    }
+
+    if (roles.length) {
+      // suggested roles become drafts; a failure here must not block the portal
+      await fetch(`/api/teams/${json.data.slug}/jobs/from-templates`, {
+        method: 'POST',
+        headers: defaultHeaders,
+        body: JSON.stringify({ keys: roles }),
+      }).catch(() => undefined);
     }
 
     mutateTeams();
@@ -151,6 +185,10 @@ const OnboardingWizard = () => {
                       {t('portal-details-description')}
                     </Card.Description>
                   </Card.Header>
+                  <IndustryTemplatePicker
+                    value={template}
+                    onChange={pickTemplate}
+                  />
                   <InputWithLabel
                     name="name"
                     label={t('portal-company-name')}
@@ -282,6 +320,33 @@ const OnboardingWizard = () => {
                       {form.primaryColor}
                     </dd>
                   </dl>
+                  {getIndustryTemplate(template)?.jobs.length ? (
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-semibold">
+                        {t('suggested-roles', 'Add these roles as drafts')}
+                      </legend>
+                      {getIndustryTemplate(template)?.jobs.map((k) => (
+                        <label
+                          key={k}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm"
+                            checked={roles.includes(k)}
+                            onChange={(e) =>
+                              setRoles(
+                                e.target.checked
+                                  ? [...roles, k]
+                                  : roles.filter((x) => x !== k)
+                              )
+                            }
+                          />
+                          {getJobTemplate(k)?.title}
+                        </label>
+                      ))}
+                    </fieldset>
+                  ) : null}
                 </>
               )}
             </Card.Body>

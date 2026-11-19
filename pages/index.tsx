@@ -1,15 +1,20 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import app from '@/lib/app';
 import { type ReactElement } from 'react';
 import { useTranslation } from 'next-i18next';
 import type { NextPageWithLayout } from 'types';
 import { GetServerSidePropsContext } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import FAQSection from '@/components/defaultLanding/FAQSection';
-import HeroSection from '@/components/defaultLanding/HeroSection';
-import FeatureSection from '@/components/defaultLanding/FeatureSection';
-import PricingSection from '@/components/defaultLanding/PricingSection';
+import {
+  CtaBand,
+  Faq,
+  Features,
+  Footer,
+  Hero,
+  HowItWorks,
+  Navbar,
+  Pricing,
+  Solutions,
+} from '@/components/landing/Sections';
+import faqs from '@/components/defaultLanding/data/faq.json';
 import useTheme from 'hooks/useTheme';
 import env from '@/lib/env';
 import Head from 'next/head';
@@ -24,53 +29,30 @@ const Home: NextPageWithLayout = () => {
         <title>{t('homepage-title')}</title>
       </Head>
 
-      <div className="container mx-auto">
-        <div className="navbar bg-base-100 px-0 sm:px-1">
-          <div className="flex-1">
-            <Link href="/" className="btn btn-ghost text-xl normal-case">
-              <Image src="/logo.png" alt="" width={28} height={28} />
-              {app.name}
-            </Link>
-          </div>
-          <div className="flex-none">
-            <ul className="menu menu-horizontal flex items-center gap-2 sm:gap-4">
-              {env.darkModeEnabled && (
-                <li>
-                  <button
-                    className="bg-none p-0 rounded-lg flex items-center justify-center"
-                    onClick={toggleTheme}
-                  >
-                    <selectedTheme.icon className="w-5 h-5" />
-                  </button>
-                </li>
-              )}
-              <li>
-                <Link
-                  href="/auth/join"
-                  className="btn btn-primary btn-md py-3 px-2 sm:px-4 text-white"
-                >
-                  {t('sign-up')}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/auth/login"
-                  className="btn btn-primary dark:border-zinc-600 dark:border-2 dark:text-zinc-200 btn-outline py-3 px-2 sm:px-4 btn-md"
-                >
-                  {t('sign-in')}
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <HeroSection />
-        <div className="divider"></div>
-        <FeatureSection />
-        <div className="divider"></div>
-        <PricingSection />
-        <div className="divider"></div>
-        <FAQSection />
-      </div>
+      <Navbar
+        themeToggle={
+          env.darkModeEnabled ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm btn-square"
+              aria-label={t('toggle-theme', 'Toggle theme')}
+              onClick={toggleTheme}
+            >
+              <selectedTheme.icon className="h-5 w-5" />
+            </button>
+          ) : null
+        }
+      />
+      <main>
+        <Hero />
+        <Solutions />
+        <Features />
+        <HowItWorks />
+        <Pricing />
+        <Faq items={faqs} />
+        <CtaBand />
+      </main>
+      <Footer />
     </>
   );
 };

@@ -62,6 +62,9 @@ const load = () => ({
   talentApi: require('pages/api/teams/[slug]/talent/index').default,
   aiSettingsApi: require('pages/api/teams/[slug]/ai/settings').default,
   invoicesApi: require('pages/api/teams/[slug]/payments/invoices').default,
+  fromTemplatesApi: require('pages/api/teams/[slug]/jobs/from-templates')
+    .default,
+  jobApi: require('pages/api/teams/[slug]/jobs/[jobId]/index').default,
   exportApi: require('pages/api/teams/[slug]/talent/export').default,
 });
 
@@ -511,6 +514,113 @@ suite('phase 7: analytics, automation, offers, talent (integration)', () => {
       expect(
         (await call(m.invoicesApi, 'rec', { query: { slug } })).status
       ).toBe(403);
+    });
+  });
+
+  describe('hospital and medical templates', () => {
+    it('a portal created from the hospital template gets its pipeline and wording', async () => {
+      const slugH = `p7h-${run}`;
+      const t = await m.createPortal({
+        userId: users.owner.id,
+        name: 'City Hospital',
+        slug: slugH,
+        template: 'hospital',
+      });
+      const stages = await prisma.pipelineStage.findMany({
+        where: { teamId: t.id, jobId: null },
+        orderBy: { order: 'asc' },
+      });
+      const names = stages.map((x) => x.name);
+
+      expect(names).toContain('Credential Verification');
+      expect(names).toContain('Occupational Health Clearance');
+      expect(stages.slice(-3).map((x) => x.kind)).toEqual([
+        'HIRED',
+        'REJECTED',
+        'WITHDRAWN',
+      ]);
+
+      const branding = await prisma.portalBranding.findUniqueOrThrow({
+        where: { teamId: t.id },
+      });
+      const profile = await prisma.portalProfile.findUniqueOrThrow({
+        where: { teamId: t.id },
+      });
+
+      expect(branding.primaryColor).toBe('#0E7C86');
+      expect(branding.heroTitle).toMatch(/Care for people/);
+      expect(profile.industry).toBe('Hospitals & healthcare');
+    });
+
+    it('creates draft jobs from templates with licence questions and attributes', async () => {
+      const r = await call(m.fromTemplatesApi, 'owner', {
+        method: 'POST',
+        query: { slug },
+        body: { keys: ['icu-nurse', 'lab-technologist'] },
+      });
+
+      expect(r.status).toBe(201);
+      expect(r.json.data).toHaveLength(2);
+
+      const job = await call(m.jobApi, 'owner', {
+        query: { slug, jobId: r.json.data[0].id },
+      });
+
+      expect(job.json.data.status).toBe('DRAFT');
+      expect(job.json.data.attributes).toMatchObject({
+        specialty: 'Critical care',
+        shift: 'ROTATING',
+        licenseRequired: true,
+      });
+      expect(job.json.data.questions.map((q: any) => q.prompt)).toEqual(
+        expect.arrayContaining([
+          'Nursing council registration number',
+          'Which shifts can you work?',
+        ])
+      );
+      expect(job.json.data.skills.some((s: any) => s.required)).toBe(true);
+    });
+
+    it('rejects unknown templates and invalid attributes', async () => {
+      const bad = await call(m.fromTemplatesApi, 'owner', {
+        method: 'POST',
+        query: { slug },
+        body: { keys: ['nope'] },
+      });
+
+      expect(bad.status).toBe(422);
+
+      const invalid = await call(m.jobsApi, 'owner', {
+        method: 'POST',
+        query: { slug },
+        body: {
+          title: 'Night Nurse',
+          descriptionHtml: '<p>x</p>',
+          attributes: { shift: 'WEEKENDS' },
+        },
+      });
+
+      expect(invalid.status).toBe(422);
+    });
+
+    it('only members who can create jobs may use templates', async () => {
+      const r = await call(m.fromTemplatesApi, 'rec', {
+        method: 'POST',
+        query: { slug },
+        body: { keys: ['icu-nurse'] },
+      });
+
+      // recruiters hold jobs.create by default; an outsider does not
+      expect(r.status).toBe(201);
+      expect(
+        (
+          await call(m.fromTemplatesApi, null, {
+            method: 'POST',
+            query: { slug },
+            body: { keys: ['icu-nurse'] },
+          })
+        ).status
+      ).toBe(401);
     });
   });
 });

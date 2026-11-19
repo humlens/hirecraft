@@ -1,4 +1,6 @@
 import { formatLocation, formatSalary } from '@/components/public/JobCard';
+import HealthcareDetails from '@/components/healthcare/HealthcareDetails';
+import type { JobAttributes } from '@/lib/industryTemplates';
 import JobActions from '@/components/public/JobActions';
 import PortalLayout from '@/components/public/PortalLayout';
 import {
@@ -114,6 +116,8 @@ const JobPage: NextPageWithLayout<Props> = ({ job, jsonLd, ...layout }) => {
             </p>
           </>
         )}
+
+        <HealthcareDetails attributes={job.attributes as JobAttributes} />
 
         {job.benefits.length > 0 && (
           <>

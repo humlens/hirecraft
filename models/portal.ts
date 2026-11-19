@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
 import { PERMISSIONS, RESERVED_SLUGS, SYSTEM_ROLES } from '@/lib/portal-roles';
 import { DEFAULT_STAGES } from '@/lib/pipeline';
+import { getIndustryTemplate, type IndustryKey } from '@/lib/industryTemplates';
 
 type Tx = Prisma.TransactionClient;
 
@@ -68,7 +69,11 @@ export async function syncSystemRoles(tx: Tx, teamId: string) {
 }
 
 /** Creates the portal's default pipeline stages if it has none. Idempotent. */
-export async function ensureDefaultStages(tx: Tx, teamId: string) {
+export async function ensureDefaultStages(
+  tx: Tx,
+  teamId: string,
+  template?: IndustryKey
+) {
   const existing = await tx.pipelineStage.count({
     where: { teamId, jobId: null },
   });
@@ -78,13 +83,15 @@ export async function ensureDefaultStages(tx: Tx, teamId: string) {
   }
 
   await tx.pipelineStage.createMany({
-    data: DEFAULT_STAGES.map((s, i) => ({
-      teamId,
-      jobId: null,
-      name: s.name,
-      kind: s.kind,
-      order: i,
-    })),
+    data: (getIndustryTemplate(template)?.stages ?? DEFAULT_STAGES).map(
+      (s, i) => ({
+        teamId,
+        jobId: null,
+        name: s.name,
+        kind: s.kind,
+        order: i,
+      })
+    ),
   });
 }
 
@@ -155,8 +162,20 @@ export async function createPortal(params: {
   profile?: PortalProfileInput;
   branding?: PortalBrandingInput;
   completeOnboarding?: boolean;
+  /** industry template: pipeline stages and wording defaults */
+  template?: IndustryKey;
 }) {
-  const { userId, name, slug, profile, branding } = params;
+  const { userId, name, slug, profile } = params;
+  const tpl = getIndustryTemplate(params.template);
+  const branding: PortalBrandingInput | undefined = tpl
+    ? {
+        primaryColor: tpl.primaryColor,
+        heroTitle: tpl.heroTitle,
+        heroSubtitle: tpl.heroSubtitle,
+        aboutHtml: tpl.about || null,
+        ...params.branding,
+      }
+    : params.branding;
 
   assertSlugAvailableForPortal(slug);
 
@@ -165,7 +184,7 @@ export async function createPortal(params: {
       const team = await tx.team.create({ data: { name, slug } });
 
       const roleIds = await syncSystemRoles(tx, team.id);
-      await ensureDefaultStages(tx, team.id);
+      await ensureDefaultStages(tx, team.id, params.template);
 
       await tx.teamMember.create({
         data: {
@@ -183,7 +202,7 @@ export async function createPortal(params: {
           description: profile?.description ?? null,
           website: profile?.website ?? null,
           contactEmail: profile?.contactEmail ?? null,
-          industry: profile?.industry ?? null,
+          industry: profile?.industry ?? (tpl?.industry || null),
           onboardingCompletedAt: params.completeOnboarding ? new Date() : null,
         },
       });

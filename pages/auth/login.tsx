@@ -144,14 +144,14 @@ const Login: NextPageWithLayout<
                 error={formik.touched.email ? formik.errors.email : undefined}
                 onChange={formik.handleChange}
               />
-              <div className="relative flex">
+              <div>
                 <InputWithLabel
                   type={isPasswordVisible ? 'text' : 'password'}
                   name="password"
                   placeholder={t('password')}
                   value={formik.values.password}
                   label={
-                    <label className="label">
+                    <label className="label w-full justify-between">
                       <span className="text-sm">{t('password')}</span>
                       <span className="text-xs">
                         <Link
@@ -166,11 +166,13 @@ const Login: NextPageWithLayout<
                   error={
                     formik.touched.password ? formik.errors.password : undefined
                   }
+                  trailing={
+                    <TogglePasswordVisibility
+                      isPasswordVisible={isPasswordVisible}
+                      handlePasswordVisibility={handlePasswordVisibility}
+                    />
+                  }
                   onChange={formik.handleChange}
-                />
-                <TogglePasswordVisibility
-                  isPasswordVisible={isPasswordVisible}
-                  handlePasswordVisibility={handlePasswordVisibility}
                 />
               </div>
               <GoogleReCAPTCHA

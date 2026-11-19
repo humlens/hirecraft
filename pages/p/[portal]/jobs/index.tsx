@@ -1,4 +1,10 @@
 import { Panel, Notice } from '@/components/ui';
+import HealthcareDetails from '@/components/healthcare/HealthcareDetails';
+import {
+  SHIFT_LABELS,
+  type JobAttributes,
+  type Shift,
+} from '@/lib/industryTemplates';
 import JobActions from '@/components/public/JobActions';
 import { formatLocation, formatSalary } from '@/components/public/JobCard';
 import PortalLayout, {
@@ -207,6 +213,20 @@ const JobsPage: NextPageWithLayout<Props> = ({
                     {salary && (
                       <span className="badge badge-outline">{salary}</span>
                     )}
+                    {(j.attributes as JobAttributes).shift && (
+                      <span className="badge badge-outline">
+                        {
+                          SHIFT_LABELS[
+                            (j.attributes as JobAttributes).shift as Shift
+                          ]
+                        }
+                      </span>
+                    )}
+                    {(j.attributes as JobAttributes).licenseRequired && (
+                      <span className="badge badge-outline">
+                        {t('licence-required', 'Licence required')}
+                      </span>
+                    )}
                   </div>
                 </Panel>
               );
@@ -271,6 +291,9 @@ const JobsPage: NextPageWithLayout<Props> = ({
                   </p>
                 </>
               )}
+              <HealthcareDetails
+                attributes={selected.attributes as JobAttributes}
+              />
               <p className="mt-5 text-sm opacity-70">
                 {[
                   selected.closesAt

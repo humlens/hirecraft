@@ -135,7 +135,7 @@ const JoinWithInvitation = ({
           />
         )}
 
-        <div className="relative flex">
+        <div>
           <InputWithLabel
             type={isPasswordVisible ? 'text' : 'password'}
             label={t('password')}
@@ -143,11 +143,13 @@ const JoinWithInvitation = ({
             placeholder={t('password')}
             value={formik.values.password}
             error={formik.errors.password}
+            trailing={
+              <TogglePasswordVisibility
+                isPasswordVisible={isPasswordVisible}
+                handlePasswordVisibility={handlePasswordVisibility}
+              />
+            }
             onChange={formik.handleChange}
-          />
-          <TogglePasswordVisibility
-            isPasswordVisible={isPasswordVisible}
-            handlePasswordVisibility={handlePasswordVisibility}
           />
         </div>
         <GoogleReCAPTCHA

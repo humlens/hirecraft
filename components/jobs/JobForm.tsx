@@ -12,6 +12,11 @@ import { Button } from '@/components/ui/daisy';
 import JobDescriptionAI from '@/components/ai/JobDescriptionAI';
 import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
+import HealthcareFields from '@/components/healthcare/HealthcareFields';
+import { hasHealthcare } from '@/components/healthcare/HealthcareDetails';
+import JobTemplatePicker from '@/components/healthcare/JobTemplatePicker';
+import { Switch } from '@/components/ui';
+import type { JobAttributes, JobTemplate } from '@/lib/industryTemplates';
 
 type Question = {
   type: 'TEXT' | 'SINGLE' | 'MULTI' | 'NUMBER' | 'BOOLEAN';
@@ -44,6 +49,7 @@ type FormState = {
   optionalSkills: string;
   locations: Location[];
   questions: Question[];
+  attributes: JobAttributes;
 };
 
 const empty: FormState = {
@@ -69,6 +75,7 @@ const empty: FormState = {
   optionalSkills: '',
   locations: [{ city: '', region: '', country: '' }],
   questions: [],
+  attributes: {},
 };
 
 const list = (s: string, sep: RegExp) =>
@@ -86,12 +93,14 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
   const [f, setF] = useState<FormState>(empty);
   const [saving, setSaving] = useState(false);
   const [publishAt, setPublishAt] = useState('');
+  const [clinical, setClinical] = useState(false);
 
   useEffect(() => {
     if (!job) {
       return;
     }
 
+    setClinical(hasHealthcare(job.attributes));
     setF({
       title: job.title,
       descriptionHtml: job.descriptionHtml,
@@ -126,6 +135,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
             country: l.country ?? '',
           }))
         : [{ city: '', region: '', country: '' }],
+      attributes: job.attributes ?? {},
       questions: job.questions.map((q) => ({
         type: q.type,
         prompt: q.prompt,
@@ -146,7 +156,36 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
     return <Error message={isError.message} />;
   }
 
+  const applyTemplate = (tpl: JobTemplate) => {
+    setF((s) => ({
+      ...s,
+      title: tpl.title,
+      descriptionHtml: tpl.descriptionHtml,
+      responsibilities: tpl.responsibilities.join('\n'),
+      employmentType: tpl.employmentType,
+      experienceMin: String(tpl.experienceMin),
+      experienceMax: tpl.experienceMax == null ? '' : String(tpl.experienceMax),
+      department: tpl.department,
+      education: tpl.education,
+      benefits: tpl.benefits.join(', '),
+      requiredSkills: tpl.requiredSkills.join(', '),
+      optionalSkills: tpl.optionalSkills.join(', '),
+      questions: tpl.questions.map((q) => ({
+        type: q.type,
+        prompt: q.prompt,
+        options: (q.options ?? []).join(', '),
+        required: q.required,
+      })),
+      attributes: tpl.attributes,
+    }));
+    setClinical(true);
+    toast.success(
+      t('template-applied', 'Template applied. Review and edit it.')
+    );
+  };
+
   const body = () => ({
+    attributes: clinical ? f.attributes : {},
     title: f.title,
     descriptionHtml: f.descriptionHtml,
     responsibilities: list(f.responsibilities, /\n/),
@@ -325,6 +364,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
       )}
 
       <div className="min-w-0 space-y-6">
+        {!jobId && <JobTemplatePicker onPick={applyTemplate} />}
         <Card>
           <Card.Body>
             <Card.Header>
@@ -650,6 +690,31 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
             </button>
           </Card.Body>
         </Card>
+
+        <Card>
+          <Card.Body>
+            <label className="flex items-center gap-3 font-semibold">
+              <Switch
+                label={t(
+                  'clinical-role-switch',
+                  'This is a clinical or healthcare role'
+                )}
+                checked={clinical}
+                onChange={(e) => setClinical(e.target.checked)}
+              />
+              {t(
+                'clinical-role-switch',
+                'This is a clinical or healthcare role'
+              )}
+            </label>
+          </Card.Body>
+        </Card>
+        {clinical && (
+          <HealthcareFields
+            value={f.attributes}
+            onChange={(v) => set('attributes', v)}
+          />
+        )}
 
         {(!jobId || can('jobs.update')) && (
           <div className="sticky bottom-0 z-30 -mx-4 flex flex-wrap justify-end gap-2 border-t bg-base-100/95 px-4 py-3 backdrop-blur md:bottom-0">
