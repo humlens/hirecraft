@@ -26,6 +26,7 @@ export default route({
       from,
       to,
       jobId: q.jobId,
+      recruiterId: q.recruiterId,
     });
 
     sendAudit({

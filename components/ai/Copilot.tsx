@@ -1,4 +1,5 @@
 import { send } from 'hooks/useApi';
+import usePortalAccess from 'hooks/usePortalAccess';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -24,8 +25,92 @@ const href = (slug: string, s: Source) =>
           ? `/teams/${slug}/interviews/${s.id}`
           : `/teams/${slug}/messages`;
 
+/** Splits an answer into text and Markdown tables (| a | b | rows). */
+const Answer = ({ text }: { text: string }) => {
+  const blocks: ({ text: string } | { rows: string[][] })[] = [];
+  let buf: string[] = [];
+  let table: string[][] = [];
+
+  const flushText = () => {
+    if (buf.length) blocks.push({ text: buf.join('\n') });
+
+    buf = [];
+  };
+  const flushTable = () => {
+    if (table.length) blocks.push({ rows: table });
+
+    table = [];
+  };
+
+  for (const line of text.split('\n')) {
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushText();
+
+      if (!/^\s*\|[\s:|-]+\|\s*$/.test(line)) {
+        table.push(
+          line
+            .trim()
+            .replace(/^\||\|$/g, '')
+            .split('|')
+            .map((c) => c.trim())
+        );
+      }
+    } else {
+      flushTable();
+      buf.push(line);
+    }
+  }
+
+  flushText();
+  flushTable();
+
+  return (
+    <>
+      {blocks.map((b, i) =>
+        'rows' in b ? (
+          <div
+            key={i}
+            className="overflow-x-auto rounded-xl border bg-base-100"
+          >
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  {b.rows[0].map((c, j) => (
+                    <th key={j}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {b.rows.slice(1).map((r, j) => (
+                  <tr key={j}>
+                    {r.map((c, k) => (
+                      <td key={k} className={k === 0 ? 'opacity-70' : ''}>
+                        {c}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          b.text.trim() && (
+            <div
+              key={i}
+              className="whitespace-pre-line rounded-2xl bg-base-200 p-4 text-sm"
+            >
+              {b.text.trim()}
+            </div>
+          )
+        )
+      )}
+    </>
+  );
+};
+
 const Copilot = ({ slug }: { slug: string }) => {
   const { t } = useTranslation('common');
+  const { access } = usePortalAccess(slug);
   const [thread, setThread] = useState<Msg[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -88,7 +173,12 @@ const Copilot = ({ slug }: { slug: string }) => {
   return (
     <div className="flex flex-wrap gap-4">
       <aside className="w-full space-y-2 lg:w-64">
-        <h2 className="text-xl font-medium">{t('copilot', 'Copilot')}</h2>
+        <h2 className="font-display text-2xl font-bold">
+          <span aria-hidden className="mr-2 text-secondary">
+            {'✦'}
+          </span>
+          {t('copilot', 'Copilot')}
+        </h2>
         <p className="text-sm opacity-70">
           {t(
             'copilot-note',
@@ -102,7 +192,7 @@ const Copilot = ({ slug }: { slug: string }) => {
           <button
             key={p}
             type="button"
-            className="btn btn-sm h-auto w-full justify-start py-2 text-left font-normal normal-case"
+            className="w-full rounded-xl border bg-base-100 px-4 py-3 text-left text-sm hover:bg-base-200"
             onClick={() => ask(p)}
           >
             {p}
@@ -110,14 +200,14 @@ const Copilot = ({ slug }: { slug: string }) => {
         ))}
         <button
           type="button"
-          className="link text-sm"
+          className="link text-sm font-medium text-primary"
           onClick={() => setThread([])}
         >
           {t('copilot-clear', 'Clear conversation')}
         </button>
       </aside>
 
-      <section className="flex min-h-112 min-w-0 flex-1 flex-col rounded-lg border">
+      <section className="flex min-h-112 min-w-0 flex-1 flex-col rounded-2xl border bg-base-100">
         <div className="flex-1 space-y-4 p-4" aria-live="polite">
           {thread.length === 0 && (
             <p className="py-16 text-center text-sm opacity-70">
@@ -130,31 +220,27 @@ const Copilot = ({ slug }: { slug: string }) => {
           {thread.map((m, i) =>
             m.role === 'user' ? (
               <div key={i} className="chat chat-end">
-                <div className="chat-bubble chat-bubble-primary">
+                <div className="chat-bubble chat-bubble-primary rounded-full">
                   {m.content}
                 </div>
               </div>
             ) : (
               <div key={i} className="max-w-[92%] space-y-2">
                 {m.steps && m.steps.length > 0 && (
-                  <span className="text-xs opacity-60">
-                    {t('copilot-used', 'Used: {{tools}}', {
-                      tools: m.steps.map((s) => s.tool).join(', '),
-                    })}
+                  <span className="block text-xs opacity-60">
+                    {`${t('copilot-read', 'Read')} ${m.sources?.length ?? 0} ${t('copilot-records', 'records')} · ${t('copilot-used-short', 'used')}: ${m.steps.map((s) => s.tool).join(', ')}${access?.role ? ` · ${t('your-access', 'your access')}: ${access.role.name}` : ''}`}
                   </span>
                 )}
-                <div className="whitespace-pre-line rounded-lg bg-base-200 p-3 text-sm">
-                  {m.content}
-                </div>
+                <Answer text={m.content} />
                 {m.sources && m.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {m.sources.map((s) => (
+                  <div className="flex flex-wrap gap-2">
+                    {m.sources.slice(0, 4).map((s) => (
                       <Link
                         key={`${s.type}:${s.id}`}
                         href={href(slug, s)}
-                        className="badge badge-outline"
+                        className="btn btn-sm btn-outline"
                       >
-                        {s.label}
+                        {`${t('open', 'Open')} ${s.label}`}
                       </Link>
                     ))}
                   </div>
@@ -172,7 +258,7 @@ const Copilot = ({ slug }: { slug: string }) => {
           }}
         >
           <input
-            className="input  input-sm flex-1"
+            className="input flex-1"
             aria-label={t('copilot-message', 'Message copilot')}
             placeholder={t(
               'copilot-placeholder',
@@ -182,11 +268,7 @@ const Copilot = ({ slug }: { slug: string }) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <button
-            type="submit"
-            className="btn btn-primary btn-sm"
-            disabled={busy}
-          >
+          <button type="submit" className="btn btn-primary" disabled={busy}>
             {t('send', 'Send')}
           </button>
         </form>

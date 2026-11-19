@@ -50,6 +50,11 @@ export const NOTIFICATION_TYPES = {
     email: false,
     push: false,
   },
+  'automation.alert': {
+    label: 'Automation alert',
+    email: false,
+    push: false,
+  },
   'ai.task_finished': { label: 'AI task finished', email: false, push: false },
 } as const;
 

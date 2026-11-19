@@ -4,20 +4,40 @@ import { openJobWhere } from '@/lib/jobs';
 import { prisma } from '@/lib/prisma';
 import type { TenantContext } from '@/lib/tenant';
 
-type Range = { from: Date; to: Date; jobId?: string };
+type Range = {
+  from: Date;
+  to: Date;
+  jobId?: string;
+  recruiterId?: string;
+};
 
 /** Jobs an assignment-scoped member may report on (null = all jobs). */
-async function scopedJobIds(ctx: TenantContext): Promise<string[] | null> {
-  if (ctx.scope !== 'assigned') {
-    return null;
+async function scopedJobIds(
+  ctx: TenantContext,
+  recruiterId?: string
+): Promise<string[] | null> {
+  let ids: string[] | null = null;
+
+  if (ctx.scope === 'assigned') {
+    const rows = await prisma.jobAssignment.findMany({
+      where: { teamId: ctx.team.id, userId: ctx.user.id },
+      select: { jobId: true },
+    });
+
+    ids = rows.map((r) => r.jobId);
   }
 
-  const rows = await prisma.jobAssignment.findMany({
-    where: { teamId: ctx.team.id, userId: ctx.user.id },
-    select: { jobId: true },
-  });
+  if (recruiterId) {
+    const rows = await prisma.jobAssignment.findMany({
+      where: { teamId: ctx.team.id, userId: recruiterId, kind: 'RECRUITER' },
+      select: { jobId: true },
+    });
+    const theirs = new Set(rows.map((r) => r.jobId));
 
-  return rows.map((r) => r.jobId);
+    ids = ids ? ids.filter((j) => theirs.has(j)) : Array.from(theirs);
+  }
+
+  return ids;
 }
 
 const jobFilter = (alias: string, r: Range, scoped: string[] | null) => {
@@ -42,7 +62,7 @@ const num = (v: unknown) => Number(v ?? 0);
 
 export async function getAnalytics(ctx: TenantContext, r: Range) {
   const teamId = ctx.team.id;
-  const scoped = await scopedJobIds(ctx);
+  const scoped = await scopedJobIds(ctx, r.recruiterId);
   const jf = jobFilter('a', r, scoped);
 
   const [
@@ -55,6 +75,9 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
     topJobs,
     offers,
     interviews,
+    fill,
+    i2o,
+    workload,
   ] = await Promise.all([
     prisma.job.count({
       where: {
@@ -111,6 +134,49 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
         FROM "Interview" i JOIN "JobApplication" a ON a.id = i."applicationId" AND a."teamId" = ${teamId}
         WHERE i."teamId" = ${teamId} AND i."startsAt" BETWEEN ${r.from} AND ${r.to} ${jf}
         GROUP BY i.status`,
+    // Days from the job being published to an accepted offer
+    prisma.$queryRaw<{ days: number | null }[]>`
+        SELECT avg(EXTRACT(EPOCH FROM (o."respondedAt" - COALESCE(j."publishedAt", j."createdAt"))) / 86400.0)::float days
+        FROM "Offer" o
+        JOIN "JobApplication" a ON a.id = o."applicationId" AND a."teamId" = ${teamId}
+        JOIN "Job" j ON j.id = a."jobId" AND j."teamId" = ${teamId}
+        WHERE o."teamId" = ${teamId} AND o.status = 'ACCEPTED'
+          AND o."respondedAt" BETWEEN ${r.from} AND ${r.to} ${jf}`,
+    // Of the applications that were interviewed, how many received an offer
+    prisma.$queryRaw<{ interviewed: bigint; offered: bigint }[]>`
+        SELECT count(DISTINCT i."applicationId") interviewed,
+               count(DISTINCT o."applicationId") offered
+        FROM "Interview" i
+        JOIN "JobApplication" a ON a.id = i."applicationId" AND a."teamId" = ${teamId}
+        LEFT JOIN "Offer" o ON o."applicationId" = a.id AND o."teamId" = ${teamId}
+        WHERE i."teamId" = ${teamId} AND i.status <> 'CANCELLED'
+          AND a."createdAt" BETWEEN ${r.from} AND ${r.to} ${jf}`,
+    // Recruiter workload (assigned recruiters, within the member's scope)
+    prisma.$queryRaw<
+      {
+        id: string;
+        name: string;
+        openJobs: bigint;
+        active: bigint;
+        reviewDays: number | null;
+        hires: bigint;
+      }[]
+    >`
+        SELECT u.id, u.name,
+          count(DISTINCT j.id) FILTER (WHERE j.status = 'PUBLISHED' AND j."deletedAt" IS NULL) "openJobs",
+          count(DISTINCT a.id) FILTER (WHERE s.kind = 'ACTIVE' AND j."deletedAt" IS NULL) active,
+          avg(EXTRACT(EPOCH FROM (now() - a."updatedAt")) / 86400.0)
+            FILTER (WHERE s.kind = 'ACTIVE' AND j."deletedAt" IS NULL)::float "reviewDays",
+          count(DISTINCT a.id) FILTER (WHERE s.kind = 'HIRED' AND a."updatedAt" BETWEEN ${r.from} AND ${r.to}) hires
+        FROM "JobAssignment" ja
+        JOIN "User" u ON u.id = ja."userId"
+        JOIN "Job" j ON j.id = ja."jobId" AND j."teamId" = ${teamId}
+        LEFT JOIN "JobApplication" a ON a."jobId" = j.id AND a."teamId" = ${teamId}
+        LEFT JOIN "PipelineStage" s ON s.id = a."stageId"
+        WHERE ja."teamId" = ${teamId} AND ja.kind = 'RECRUITER'
+          ${scoped ? (scoped.length ? Prisma.sql`AND j.id IN (${Prisma.join(scoped)})` : Prisma.sql`AND FALSE`) : Prisma.empty}
+          ${r.jobId ? Prisma.sql`AND j.id = ${r.jobId}` : Prisma.empty}
+        GROUP BY u.id, u.name ORDER BY active DESC, u.name`,
   ]);
 
   const byKind = Object.fromEntries(outcomes.map((o) => [o.kind, num(o.n)]));
@@ -118,7 +184,12 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
   const answered = (offerBy.ACCEPTED ?? 0) + (offerBy.DECLINED ?? 0);
 
   return {
-    range: { from: r.from, to: r.to, jobId: r.jobId ?? null },
+    range: {
+      from: r.from,
+      to: r.to,
+      jobId: r.jobId ?? null,
+      recruiterId: r.recruiterId ?? null,
+    },
     kpis: {
       openJobs,
       applications: num(apps[0]?.n),
@@ -128,6 +199,11 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
       inProgress: byKind.ACTIVE ?? 0,
       avgTimeToHireDays:
         ttH[0]?.days == null ? null : Math.round(ttH[0].days * 10) / 10,
+      avgTimeToFillDays:
+        fill[0]?.days == null ? null : Math.round(fill[0].days * 10) / 10,
+      interviewToOfferRate: num(i2o[0]?.interviewed)
+        ? Math.round((num(i2o[0]?.offered) / num(i2o[0]?.interviewed)) * 100)
+        : null,
       offerAcceptanceRate: answered
         ? Math.round(((offerBy.ACCEPTED ?? 0) / answered) * 100)
         : null,
@@ -140,6 +216,15 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
       applications: num(j.n),
     })),
     offers: offerBy,
+    recruiters: workload.map((w) => ({
+      id: w.id,
+      name: w.name,
+      openJobs: num(w.openJobs),
+      activeCandidates: num(w.active),
+      avgDaysInReview:
+        w.reviewDays == null ? null : Math.round(w.reviewDays * 10) / 10,
+      hires: num(w.hires),
+    })),
     interviews: Object.fromEntries(interviews.map((i) => [i.status, num(i.n)])),
   };
 }
@@ -147,7 +232,7 @@ export async function getAnalytics(ctx: TenantContext, r: Range) {
 /** Applications report as CSV (contains personal data: needs candidates.export). */
 export async function exportApplicationsCsv(ctx: TenantContext, r: Range) {
   const teamId = ctx.team.id;
-  const scoped = await scopedJobIds(ctx);
+  const scoped = await scopedJobIds(ctx, r.recruiterId);
   const rows = await prisma.jobApplication.findMany({
     where: {
       teamId,

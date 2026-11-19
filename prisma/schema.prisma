@@ -944,6 +944,7 @@ model Offer {
   startDate     DateTime?
   expiresAt     DateTime?
   terms         String?     @db.Text
+  templateKey   String?
   status        OfferStatus @default(DRAFT)
   round         Int         @default(0)
   createdById   String?

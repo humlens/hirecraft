@@ -15,8 +15,13 @@ export default route({
     const to = q.to ?? new Date();
     const from = q.from ?? new Date(to.getTime() - 30 * 86400_000);
 
-    res
-      .status(200)
-      .json({ data: await getAnalytics(ctx, { from, to, jobId: q.jobId }) });
+    res.status(200).json({
+      data: await getAnalytics(ctx, {
+        from,
+        to,
+        jobId: q.jobId,
+        recruiterId: q.recruiterId,
+      }),
+    });
   },
 });

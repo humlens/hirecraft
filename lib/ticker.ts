@@ -1,4 +1,5 @@
 import { reconcileUsage } from './entitlements';
+import { runAutomationSweeps } from 'models/automation';
 import { jobStaffIds, notify } from './notifications';
 import { prisma, unguardedPrisma } from './prisma';
 import { sendEvent } from './svix';
@@ -11,6 +12,7 @@ export type TickResult = {
   remindersSent: number;
   offersExpired: number;
   aiLogsDeleted: number;
+  automationsFired: number;
 };
 
 const slugCache = new Map<string, string>();
@@ -47,6 +49,7 @@ export async function runDueTasks(now = new Date()): Promise<TickResult> {
     remindersSent: 0,
     offersExpired: 0,
     aiLogsDeleted: 0,
+    automationsFired: 0,
   };
 
   // 1. scheduled jobs go live (claimed with a conditional update: no double publish)
@@ -217,7 +220,14 @@ export async function runDueTasks(now = new Date()): Promise<TickResult> {
 
   result.aiLogsDeleted = purged.count;
 
-  // 6. usage gauges are reconciled from the source tables once a day (UTC)
+  // 6. time-based automation rules (stale applications, low-applicant jobs)
+  result.automationsFired = await runAutomationSweeps(now).catch((error) => {
+    console.error('automation sweep failed', error);
+
+    return 0;
+  });
+
+  // 7. usage gauges are reconciled from the source tables once a day (UTC)
   const day = now.toISOString().slice(0, 10);
 
   if (lastReconcileDay !== day) {

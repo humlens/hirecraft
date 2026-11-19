@@ -212,8 +212,26 @@ test('offer: created, approved by the hiring manager, sent, accepted by the cand
   const offerUrl = page.url();
   await expect(page.locator('.badge', { hasText: /^DRAFT$/ })).toBeVisible();
 
-  await page.getByLabel(people.hm.name).check();
-  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  // the approval chain is pre-filled: keep only the hiring manager
+  const others = page.getByRole('button', {
+    name: new RegExp(`^Remove (?!${people.hm.name})`),
+  });
+
+  while (await others.count()) {
+    await others.first().click();
+  }
+
+  if (
+    !(await page
+      .getByRole('button', { name: `Remove ${people.hm.name}` })
+      .count())
+  ) {
+    await page
+      .getByLabel('Add approver')
+      .selectOption({ label: people.hm.name });
+  }
+
+  await page.getByRole('button', { name: 'Request approval' }).click();
   await expect(page.getByText('PENDING_APPROVAL')).toBeVisible();
 
   // the hiring manager approves
@@ -256,9 +274,14 @@ test('analytics, talent import/export and pipeline settings', async ({
   await expect(page.getByText('Hires')).toBeVisible();
   const hires = page.locator('div', { hasText: /^Hires\s*1$/ });
   await expect(hires.first()).toBeVisible();
+  await expect(page.getByText('Recruiter workload')).toBeVisible();
+  await expect(page.getByText('Stage conversion')).toBeVisible();
+  await page.getByLabel('Period').selectOption('30');
+  await expect(page.getByText('Source of applications')).toBeVisible();
 
   await page.goto(`/teams/${slug}/talent`);
   await expect(page.getByRole('link', { name: cand.name })).toBeVisible();
+  await page.getByRole('button', { name: 'Import CSV' }).click();
   await page
     .getByLabel('CSV content')
     .fill('name,email,tags\nIvy Import,ivy@import.test,golang;remote');
@@ -277,6 +300,19 @@ test('analytics, talent import/export and pipeline settings', async ({
   await page.getByLabel('New stage').fill('Case study');
   await page.getByRole('button', { name: 'Add stage' }).click();
   await expect(page.getByLabel('Stage name 11')).toHaveValue('Case study');
+
+  // automation rules: build one with the new score trigger, then switch it off
+  await page.getByRole('button', { name: 'New rule' }).click();
+  await page.getByLabel('Rule name').fill('Strong match tag');
+  await page.getByLabel('When', { exact: true }).selectOption('MATCH_SCORED');
+  await page.getByLabel('Then', { exact: true }).selectOption('ADD_TAG');
+  await page.getByLabel('Tag', { exact: true }).fill('ai-strong');
+  await page.getByRole('button', { name: 'Add rule' }).click();
+  await expect(page.getByText('scores ≥ 75% match')).toBeVisible();
+  await page.getByRole('switch', { name: /Disable Strong match tag/ }).click();
+  await expect(
+    page.getByRole('switch', { name: /Enable Strong match tag/ })
+  ).toBeVisible();
 
   // notifications reach the bell
   await page.goto(`/teams/${slug}/settings`);

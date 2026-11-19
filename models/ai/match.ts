@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { buildTenantContext, type TenantContext } from '@/lib/tenant';
 import { enqueue } from '@/lib/queue';
 import { jobScope } from 'models/job';
+import { runAutomations } from 'models/automation';
 import { aiContext } from './context';
 import { experienceYears } from './resumeParse';
 
@@ -376,7 +377,15 @@ export async function assessApplication(
     },
   });
 
-  // Deliberately nothing else: no stage change, no rejection, no message.
+  // Automation rules may react to the score (tags, notifications, drafts that
+  // wait for approval). Never a stage change, rejection or message.
+  await runAutomations({
+    type: 'MATCH_SCORED',
+    teamId,
+    applicationId: row.applicationId,
+    score: row.score,
+  }).catch(() => undefined);
+
   return toView(row);
 }
 
