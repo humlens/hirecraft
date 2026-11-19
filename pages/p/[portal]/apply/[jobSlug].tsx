@@ -170,20 +170,70 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
   const setAnswer = (id: string, v: Answer) =>
     setAnswers((a) => ({ ...a, [id]: v }));
 
+  const steps = [
+    { label: t('step-account', 'Account'), done: status === 'authenticated' },
+    { label: t('step-resume', 'Resume'), done: !!resumeId },
+    {
+      label: t('step-review', 'Review profile'),
+      done:
+        !!resumeId &&
+        job.questions.every((q) => !q.required || answers[q.id] !== undefined),
+    },
+    { label: t('step-apply', 'Apply'), done },
+  ];
+  const currentStep = done
+    ? 3
+    : status !== 'authenticated'
+      ? 0
+      : !resumeId
+        ? 1
+        : steps[2].done
+          ? 3
+          : 2;
+
   return (
     <PortalLayout
       {...layout}
       title={`${t('apply-to', 'Apply to')} ${job.title} - ${portal.name}`}
       noindex
     >
-      <h1 className="mb-1 text-2xl font-bold">
-        {t('apply-to', 'Apply to')} {job.title}
-      </h1>
-      <p className="mb-6 text-sm opacity-70">
-        <Link className="link" href={`${base}/jobs/${job.slug}`}>
-          {t('back-to-job', 'Back to the job')}
-        </Link>
-      </p>
+      <div
+        className="-mx-4 -mt-8 mb-6 px-4 py-3 text-sm text-white"
+        style={{ backgroundColor: primary }}
+      >
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center gap-2">
+          <strong>{`${portal.name} ${t('careers', 'Careers')}`}</strong>
+          <span className="opacity-80">
+            {`· ${t('applying-for', 'Applying for')} ${job.title}`}
+          </span>
+          <Link className="ml-auto underline" href={`${base}/jobs/${job.slug}`}>
+            {t('back-to-job', 'Back to the job')}
+          </Link>
+        </div>
+      </div>
+
+      <ol
+        className="mx-auto mb-6 flex max-w-2xl flex-wrap gap-2 text-sm"
+        aria-label={t('progress', 'Progress')}
+      >
+        {steps.map((st, i) => (
+          <li
+            key={st.label}
+            aria-current={i === currentStep ? 'step' : undefined}
+            className={`rounded-full px-3 py-1 ${
+              i === currentStep
+                ? 'font-semibold text-white'
+                : st.done
+                  ? 'bg-success/15 text-success'
+                  : 'border opacity-60'
+            }`}
+            style={i === currentStep ? { backgroundColor: primary } : undefined}
+          >
+            {st.done && i !== currentStep ? '✓ ' : ''}
+            {st.label}
+          </li>
+        ))}
+      </ol>
 
       {status === 'loading' && <Loading />}
 
@@ -199,7 +249,10 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
       )}
 
       {!done && status === 'unauthenticated' && (
-        <form onSubmit={submitAuth} className="max-w-md space-y-3">
+        <form
+          onSubmit={submitAuth}
+          className="mx-auto max-w-md space-y-3 rounded-2xl border bg-base-100 p-6"
+        >
           <div role="tablist" className="tabs tabs-boxed">
             <button
               type="button"
@@ -274,9 +327,11 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
       )}
 
       {!done && status === 'authenticated' && (
-        <form onSubmit={submit} className="max-w-2xl space-y-6">
-          <fieldset className="space-y-2">
-            <legend className="font-semibold">{t('resume', 'Resume')}</legend>
+        <form onSubmit={submit} className="mx-auto max-w-2xl space-y-6">
+          <fieldset className="space-y-3 rounded-2xl border bg-base-100 p-6">
+            <legend className="px-1 font-display text-lg font-semibold">
+              {t('upload-your-resume', 'Upload your resume')}
+            </legend>
             {resumes.map((r) => (
               <label key={r.id} className="flex items-center gap-2 text-sm">
                 <input
@@ -289,15 +344,36 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                 {`${r.fileName} (${Math.round(r.size / 1024)} ${t('kb', 'KB')})`}
               </label>
             ))}
-            <label className="block text-sm">
-              <span className="mb-1 block">
+            <label
+              className="flex cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 border-dashed p-8 text-center hover:bg-base-200"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files?.[0];
+
+                if (f) {
+                  upload(f);
+                }
+              }}
+            >
+              <span className="font-display font-semibold">
+                {t('drop-resume', 'Drop your resume here')}
+              </span>
+              <span className="text-xs opacity-70">
                 {t('upload-resume', 'Upload a resume (PDF or DOCX, max 5 MB)')}
+              </span>
+              <span className="btn btn-outline btn-sm mt-2" aria-hidden="true">
+                {t('choose-file', 'Choose file')}
               </span>
               <input
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="file-input  file-input-sm w-full"
+                className="sr-only"
                 data-testid="resume-upload"
+                aria-label={t(
+                  'upload-resume',
+                  'Upload a resume (PDF or DOCX, max 5 MB)'
+                )}
                 onChange={(e) =>
                   e.target.files?.[0] && upload(e.target.files[0])
                 }
@@ -306,8 +382,8 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
           </fieldset>
 
           {job.questions.length > 0 && (
-            <fieldset className="space-y-4">
-              <legend className="font-semibold">
+            <fieldset className="space-y-4 rounded-2xl border bg-base-100 p-6">
+              <legend className="px-1 font-display text-lg font-semibold">
                 {t('screening-questions', 'Screening questions')}
               </legend>
               {job.questions.map((q) => (
@@ -393,8 +469,10 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
             </fieldset>
           )}
 
-          <fieldset className="space-y-2 text-sm">
-            <legend className="font-semibold">{t('consent', 'Consent')}</legend>
+          <fieldset className="space-y-2 rounded-2xl border bg-base-100 p-6 text-sm">
+            <legend className="px-1 font-display text-lg font-semibold">
+              {t('consent', 'Consent')}
+            </legend>
             <label className="flex items-start gap-2">
               <input
                 type="checkbox"

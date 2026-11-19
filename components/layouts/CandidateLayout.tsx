@@ -4,11 +4,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { SWRConfig } from 'swr';
 import { clearPwaState } from '@/lib/pwa';
+import useApi from 'hooks/useApi';
 
 const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation('common');
   const { data: session } = useSession();
   const { pathname } = useRouter();
+  const { data: notes } = useApi<{ unread: number }>('/api/notifications');
+  const initials = (session?.user?.name ?? session?.user?.email ?? '?')
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
 
   const links = [
     { href: '/me', label: t('my-dashboard', 'Dashboard') },
@@ -26,7 +34,9 @@ const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
     <SWRConfig value={{ revalidateOnFocus: false }}>
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3">
-          <span className="font-bold">{t('candidate-area', 'Job seeker')}</span>
+          <span className="font-display font-bold">
+            {t('candidate-area', 'Job seeker')}
+          </span>
           <nav
             className="hidden flex-wrap gap-4 text-sm md:flex"
             aria-label={t('candidate-navigation', 'Candidate navigation')}
@@ -42,7 +52,24 @@ const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
             ))}
           </nav>
           <span className="ml-auto flex items-center gap-3 text-sm">
-            {session?.user?.email}
+            <Link
+              href="/me/notifications"
+              aria-label={t('notifications', 'Notifications')}
+              className="relative"
+            >
+              {'🔔'}
+              {!!notes?.unread && (
+                <span className="absolute -right-2 -top-2 rounded-full bg-error px-1.5 text-[10px] text-white">
+                  {notes.unread}
+                </span>
+              )}
+            </Link>
+            <span
+              title={session?.user?.email ?? ''}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
+            >
+              {initials}
+            </span>
             <button
               type="button"
               className="link"

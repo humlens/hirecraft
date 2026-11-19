@@ -12,7 +12,12 @@ type Assessment = {
   suggestedQuestions: string[];
   breakdown: {
     experienceYears?: number;
-    components: { key: string; score: number | null; applicable: boolean }[];
+    components: {
+      key: string;
+      label?: string;
+      score: number | null;
+      applicable: boolean;
+    }[];
   };
   createdAt: string;
   note: string;
@@ -47,9 +52,11 @@ const MatchPanel = ({
   };
 
   return (
-    <section className="space-y-3 rounded-lg border p-4">
+    <section className="space-y-4 rounded-2xl border bg-base-100 p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="mr-auto font-semibold">{t('ai-match', 'AI match')}</h3>
+        <h3 className="mr-auto font-display text-lg font-semibold">
+          {t('ai-match-assessment', 'AI match assessment')}
+        </h3>
         <button type="button" className="btn btn-sm" onClick={run}>
           {a ? t('ai-rerun', 'Run again') : t('ai-assess', 'Assess candidate')}
         </button>
@@ -61,28 +68,45 @@ const MatchPanel = ({
       )}
       {a && (
         <>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-5">
             <div
               className="radial-progress text-primary"
               style={
-                { '--value': a.score, '--size': '4rem' } as React.CSSProperties
+                { '--value': a.score, '--size': '6rem' } as React.CSSProperties
               }
               role="img"
               aria-label={`${a.score}%`}
             >
-              {a.score}%
+              <span className="text-xl font-bold">{a.score}%</span>
             </div>
-            <p className="text-sm">{a.explanation}</p>
+            <ul className="min-w-56 flex-1 space-y-2 text-sm">
+              {a.breakdown.components
+                .filter((c) => c.applicable && c.score != null)
+                .map((c) => (
+                  <li key={c.key}>
+                    <div className="flex justify-between">
+                      <span>{c.label ?? c.key}</span>
+                      <span className="opacity-70">{`${Math.round(c.score as number)}%`}</span>
+                    </div>
+                    <progress
+                      className="progress progress-primary h-1.5 w-full"
+                      value={c.score as number}
+                      max={100}
+                    />
+                  </li>
+                ))}
+            </ul>
           </div>
-          <div className="flex flex-wrap gap-1">
+          <p className="text-sm">{a.explanation}</p>
+          <div className="flex flex-wrap gap-1.5">
             {a.matchedSkills.map((s) => (
-              <span key={s} className="badge badge-success badge-sm">
-                {s}
+              <span key={s} className="badge badge-success badge-soft">
+                {`✓ ${s}`}
               </span>
             ))}
             {a.missingSkills.map((s) => (
-              <span key={s} className="badge badge-warning badge-sm">
-                {t('ai-missing', 'Missing')}: {s}
+              <span key={s} className="badge badge-warning badge-soft">
+                {`? ${t('ai-missing', 'Missing')}: ${s}`}
               </span>
             ))}
           </div>
@@ -110,16 +134,25 @@ const MatchPanel = ({
           {a.suggestedQuestions.length > 0 && (
             <div>
               <h4 className="text-sm font-medium">
-                {t('ai-suggested-questions', 'Suggested questions')}
+                {t(
+                  'ai-suggested-questions-title',
+                  'Suggested screening questions'
+                )}
               </h4>
-              <ul className="list-disc pl-5 text-sm">
+              <ol className="list-decimal space-y-1 pl-5 text-sm">
                 {a.suggestedQuestions.map((q) => (
                   <li key={q}>{q}</li>
                 ))}
-              </ul>
+              </ol>
             </div>
           )}
-          <p className="text-xs opacity-60">{a.note}</p>
+          <p className="rounded-xl bg-base-200 p-3 text-xs opacity-80">
+            {t(
+              'ai-fairness-note',
+              'Not used for scoring: age, gender, religion, ethnicity, disability, photo, marital status. Scores never trigger automatic rejection.'
+            )}{' '}
+            {a.note}
+          </p>
         </>
       )}
     </section>

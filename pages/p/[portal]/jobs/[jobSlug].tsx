@@ -1,7 +1,6 @@
 import { formatLocation, formatSalary } from '@/components/public/JobCard';
-import PortalLayout, {
-  primaryButtonStyle,
-} from '@/components/public/PortalLayout';
+import JobActions from '@/components/public/JobActions';
+import PortalLayout from '@/components/public/PortalLayout';
 import {
   jobPostingJsonLd,
   safeJsonForScript,
@@ -10,11 +9,7 @@ import {
 } from '@/lib/jobs';
 import { getPortalProps, type PortalPageProps } from '@/lib/publicPage';
 import type { GetServerSidePropsContext } from 'next';
-import { useSession } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
-import Link from 'next/link';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
 import { getPublicJob, type PublicJob } from 'models/publicPortal';
 import type { NextPageWithLayout } from 'types';
 
@@ -28,8 +23,6 @@ const label = (s: string) =>
 
 const JobPage: NextPageWithLayout<Props> = ({ job, jsonLd, ...layout }) => {
   const { t } = useTranslation('common');
-  const { data: session } = useSession();
-  const [saved, setSaved] = useState(false);
   const { portal } = layout;
 
   if (!job) {
@@ -38,21 +31,6 @@ const JobPage: NextPageWithLayout<Props> = ({ job, jsonLd, ...layout }) => {
 
   const base = `/p/${portal.slug}`;
   const salary = formatSalary(job);
-
-  const save = async () => {
-    const r = await fetch('/api/candidate/saved-jobs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId: job.id }),
-    });
-
-    if (r.ok) {
-      setSaved(true);
-      toast.success(t('job-saved-for-later', 'Job saved.'));
-    } else {
-      toast.error(t('sign-in-to-save', 'Sign in to save jobs.'));
-    }
-  };
 
   return (
     <PortalLayout
@@ -90,24 +68,13 @@ const JobPage: NextPageWithLayout<Props> = ({ job, jsonLd, ...layout }) => {
           )}
         </div>
 
-        <div className="my-6 flex flex-wrap gap-3">
-          <Link
-            href={`${base}/apply/${job.slug}`}
-            className="btn"
-            style={primaryButtonStyle(portal.branding.primaryColor)}
-          >
-            {t('apply-now', 'Apply now')}
-          </Link>
-          {session && (
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={save}
-              disabled={saved}
-            >
-              {saved ? t('saved', 'Saved') : t('save-job', 'Save job')}
-            </button>
-          )}
+        <div className="my-6">
+          <JobActions
+            portalSlug={portal.slug}
+            jobId={job.id}
+            jobSlug={job.slug}
+            color={portal.branding.primaryColor}
+          />
         </div>
 
         <div

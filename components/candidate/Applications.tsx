@@ -14,25 +14,39 @@ const Tracker = ({ app }: { app: MyApplication }) => {
   const current = path.findIndex((s) => s.id === app.stage.id);
 
   return (
-    <ol className="flex flex-wrap gap-1 text-xs" aria-label="progress">
+    <ol className="flex gap-1.5 text-xs" aria-label="progress">
       {path.map((s, i) => (
         <li
           key={s.id}
           aria-current={s.id === app.stage.id ? 'step' : undefined}
-          className={`rounded px-2 py-1 ${
-            s.id === app.stage.id
-              ? 'bg-primary font-semibold text-primary-content'
-              : i < current
-                ? 'bg-base-300'
-                : 'border opacity-50'
-          }`}
+          className="min-w-0 flex-1"
         >
-          {s.name}
+          <span
+            className={`mb-1 block h-1.5 rounded-full ${
+              i <= current ? 'bg-primary' : 'bg-base-300'
+            }`}
+          />
+          <span
+            className={`block truncate ${
+              s.id === app.stage.id ? 'font-semibold' : 'opacity-60'
+            }`}
+          >
+            {s.name}
+          </span>
         </li>
       ))}
     </ol>
   );
 };
+
+const pill = (kind: string) =>
+  kind === 'REJECTED'
+    ? 'badge-error'
+    : kind === 'HIRED'
+      ? 'badge-success'
+      : kind === 'WITHDRAWN'
+        ? 'badge-ghost'
+        : 'badge-primary badge-soft';
 
 export const ApplicationList = ({ limit }: { limit?: number }) => {
   const { t } = useTranslation('common');
@@ -78,22 +92,22 @@ export const ApplicationList = ({ limit }: { limit?: number }) => {
   return (
     <ul className="space-y-4">
       {apps.map((a) => (
-        <li key={a.id} className="space-y-2 rounded border p-4">
+        <li key={a.id} className="space-y-3 rounded-2xl border bg-base-100 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              className="font-semibold hover:underline"
+              className="font-display font-semibold hover:underline"
               href={`/p/${a.portal.slug}/jobs/${a.job.slug}`}
             >
               {a.job.title}
             </Link>
-            <span className="text-sm opacity-70">{a.portal.name}</span>
-            <span className="badge ml-auto">{a.stage.name}</span>
+            <span className={`badge ml-auto ${pill(a.stage.kind)}`}>
+              {a.stage.name}
+            </span>
           </div>
-          <Tracker app={a} />
-          <p className="text-xs opacity-60">
-            {t('applied-on', 'Applied on')}{' '}
-            {new Date(a.appliedAt).toLocaleDateString()}
+          <p className="text-sm opacity-70">
+            {`${a.portal.name} · ${t('applied-on', 'Applied on')} ${new Date(a.appliedAt).toLocaleDateString()}`}
           </p>
+          <Tracker app={a} />
           {a.stage.kind !== 'WITHDRAWN' &&
             a.stage.kind !== 'HIRED' &&
             a.stage.kind !== 'REJECTED' && (
