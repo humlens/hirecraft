@@ -109,7 +109,7 @@ test('Owner invites a recruiter who then has only recruiter permissions', async 
   await expect(page.getByRole('cell', { name: 'Portal Owner' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Invite Member' }).click();
-  await page.getByPlaceholder('jackson@boxyhq.com').fill(recruiter.email);
+  await page.getByPlaceholder('name@company.com').fill(recruiter.email);
   await page.locator('select[name="portalRoleId"]').first().selectOption({
     label: 'Recruiter',
   });

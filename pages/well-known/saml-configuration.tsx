@@ -39,16 +39,7 @@ const SPConfig: NextPageWithLayout<
                 i18nKey="refer-to-provider-instructions"
                 t={t}
                 components={{
-                  guideLink: (
-                    <a
-                      href="https://boxyhq.com/docs/jackson/sso-providers"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline underline-offset-4"
-                    >
-                      {t('guides')}
-                    </a>
-                  ),
+                  guideLink: <span className="font-medium">{t('guides')}</span>,
                 }}
               />
             </p>

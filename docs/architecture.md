@@ -1,6 +1,6 @@
 # Architecture
 
-Job-portal SaaS built on the BoxyHQ SaaS Starter Kit. The kit is the **SaaS
+Job-portal SaaS built on a multi-tenant SaaS foundation. The foundation is the **SaaS
 infrastructure layer** (auth, teams, invitations, RBAC, SSO, SCIM, audit logs,
 webhooks, billing); the recruitment platform is its **business domain**.
 
