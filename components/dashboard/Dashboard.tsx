@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import classNames from 'classnames';
+import toast from 'react-hot-toast';
+import { copyToClipboard } from '@/lib/common';
 
 type Data = {
   days: number;
@@ -92,6 +94,30 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
             {greeting(t)}, {session?.user?.name?.split(' ')[0]}
           </h1>
           <p className="text-sm text-base-content/70">{teamName}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-base-content/70">
+              {t('careers-page', 'Careers page')}:
+            </span>
+            <code className="rounded bg-base-200 px-1.5 py-0.5">{`/p/${slug}`}</code>
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                copyToClipboard(`${window.location.origin}/p/${slug}`);
+                toast.success(t('portal-link-copied', 'Portal link copied.'));
+              }}
+            >
+              {t('copy-portal-link', 'Copy link')}
+            </button>
+            <a
+              className="link"
+              href={`/p/${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('view-portal', 'View portal')}
+            </a>
+          </p>
         </div>
         <div
           className="flex flex-wrap gap-2"

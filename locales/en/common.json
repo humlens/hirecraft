@@ -1036,5 +1036,9 @@
   "int-endpoint": "Endpoint",
   "int-signed": "Signed payloads",
   "int-no-endpoints": "No webhook endpoints yet.",
-  "int-off": "not set up"
+  "int-off": "not set up",
+  "careers-page": "Careers page",
+  "portal-link-copied": "Portal link copied.",
+  "copy-portal-link": "Copy link",
+  "view-portal": "View portal"
 }
