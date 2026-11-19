@@ -3,6 +3,7 @@ import {
   ArrowRightOnRectangleIcon,
   BellIcon,
   EllipsisHorizontalIcon,
+  MapIcon,
   RectangleStackIcon,
   SunIcon,
   UserCircleIcon,
@@ -163,6 +164,12 @@ const PortalShell = ({ children }: { children: React.ReactNode }) => {
                   </Link>
                 </li>
                 <li onClick={closeMenu}>
+                  <Link href="/flow">
+                    <MapIcon className="h-4 w-4" aria-hidden="true" />{' '}
+                    {t('flow-map', 'Flow map')}
+                  </Link>
+                </li>
+                <li onClick={closeMenu}>
                   <Link href="/settings/account">
                     <UserCircleIcon className="h-4 w-4" aria-hidden="true" />{' '}
                     {t('account')}
@@ -190,7 +197,7 @@ const PortalShell = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </header>
-      <main className="py-6">
+      <main className="pb-24 pt-6 md:pb-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
       </main>
     </div>

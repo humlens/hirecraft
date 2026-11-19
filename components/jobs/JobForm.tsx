@@ -481,6 +481,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
               value={f.requiredSkills}
               onChange={(e) => set('requiredSkills', e.target.value)}
             />
+            <SkillChips value={f.requiredSkills} primary />
             <InputWithLabel
               name="optionalSkills"
               label={t(
@@ -490,6 +491,7 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
               value={f.optionalSkills}
               onChange={(e) => set('optionalSkills', e.target.value)}
             />
+            <SkillChips value={f.optionalSkills} />
           </Card.Body>
         </Card>
 
@@ -650,9 +652,11 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
         </Card>
 
         {(!jobId || can('jobs.update')) && (
-          <Button color="primary" loading={saving} onClick={save}>
-            {t('save-changes')}
-          </Button>
+          <div className="sticky bottom-0 z-30 -mx-4 flex flex-wrap justify-end gap-2 border-t bg-base-100/95 px-4 py-3 backdrop-blur md:bottom-0">
+            <Button color="primary" loading={saving} onClick={save}>
+              {t('save-changes')}
+            </Button>
+          </div>
         )}
 
         {jobId && can('jobs.update') && (
@@ -675,6 +679,35 @@ const JobForm = ({ slug, jobId }: { slug: string; jobId?: string }) => {
         </aside>
       )}
     </div>
+  );
+};
+
+/** Shows the comma-separated skills as chips so the list reads at a glance. */
+const SkillChips = ({
+  value,
+  primary,
+}: {
+  value: string;
+  primary?: boolean;
+}) => {
+  const items = value
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  if (!items.length) return null;
+
+  return (
+    <ul className="-mt-2 flex flex-wrap gap-2" aria-hidden="true">
+      {items.map((x) => (
+        <li
+          key={x}
+          className={`rounded-full px-3 py-1 text-sm ${primary ? 'bg-primary/10 text-primary' : 'bg-base-200 text-base-content/80'}`}
+        >
+          {x}
+        </li>
+      ))}
+    </ul>
   );
 };
 

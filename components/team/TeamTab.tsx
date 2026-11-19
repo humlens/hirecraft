@@ -29,7 +29,7 @@ const TeamTab = ({ team, heading }: TeamTabProps) => {
   );
 
   return (
-    <div className="flex flex-col pb-20 md:pb-0">
+    <div className="flex flex-col">
       <PlanBanner slug={team.slug} canBilling={can('billing.manage')} />
       {heading && <h1 className="mb-2 text-2xl font-semibold">{heading}</h1>}
       {quick.length > 0 && (
