@@ -23,7 +23,6 @@ export {
 export type { FeatureKey, LimitKey, Limits, Plan } from './planDefaults';
 import {
   DEFAULT_ENTITLEMENTS,
-  FEATURE_KEYS,
   LIMIT_KEYS,
   LIMIT_LABELS,
   PLANS,
