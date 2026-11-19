@@ -47,7 +47,7 @@ const CreateTeam = ({ visible, setVisible }: CreateTeamProps) => {
       mutateTeams();
       setVisible(false);
       toast.success(t('team-created'));
-      router.push(`/teams/${json.data.slug}/settings`);
+      router.push(`/teams/${json.data.slug}/dashboard`);
     },
   });
 

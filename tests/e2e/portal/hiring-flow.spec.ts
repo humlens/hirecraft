@@ -59,7 +59,7 @@ test('set up a portal, a published job, an application and a hiring team', async
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create portal' }).click();
-  await page.waitForURL(`/teams/${slug}/settings`);
+  await page.waitForURL(`/teams/${slug}/dashboard`);
 
   const team = await prisma.team.findUniqueOrThrow({ where: { slug } });
   for (const p of Object.values(people)) {
@@ -138,7 +138,7 @@ test('recruiter schedules an interview; the invitation is only a draft', async (
     .toISOString()
     .slice(0, 16);
   await page.getByLabel('Starts at').fill(local);
-  await page.getByLabel(people.iv.name).check();
+  await page.getByText(people.iv.name, { exact: true }).click();
   await page.getByRole('button', { name: 'Schedule', exact: true }).click();
   await expect(page.getByText('Interview scheduled')).toBeVisible();
 
@@ -184,8 +184,14 @@ test('the interviewer submits a scorecard after the interview', async ({
   await login(page, people.iv.email, people.iv.password);
   await page.goto(`/teams/${slug}/interviews`);
   await page.getByRole('link', { name: cand.name }).click();
-  await page.getByLabel('Technical skills').selectOption('4');
-  await page.getByLabel('Communication').selectOption('3');
+  await page
+    .getByRole('radiogroup', { name: 'Technical skills' })
+    .getByRole('radio', { name: '4' })
+    .click();
+  await page
+    .getByRole('radiogroup', { name: 'Communication' })
+    .getByRole('radio', { name: '3' })
+    .click();
   await page.getByRole('button', { name: 'Submit feedback' }).click();
   await expect(page.getByText('Feedback saved')).toBeVisible();
   await expect(

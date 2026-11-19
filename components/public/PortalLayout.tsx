@@ -12,6 +12,9 @@ type Props = PortalPageProps & {
   noindex?: boolean;
   canonicalPath?: string;
   head?: React.ReactNode;
+  /** Content shown in a branded band under the nav (jobs page). */
+  hero?: React.ReactNode;
+  wide?: boolean;
 };
 
 /** Branded shell for the public portal: colors, theme, nav, SEO tags. */
@@ -24,6 +27,8 @@ const PortalLayout = ({
   noindex,
   canonicalPath,
   head,
+  hero,
+  wide,
 }: Props) => {
   const { t } = useTranslation('common');
   const { data: session } = useSession();
@@ -81,47 +86,62 @@ const PortalLayout = ({
         {head}
       </Head>
 
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3">
+      <div
+        className={hero ? 'text-white' : 'border-b'}
+        style={hero ? { backgroundColor: primary } : undefined}
+      >
+        <header className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
           <Link
             href={base}
-            className="text-lg font-bold"
-            style={{ color: primary }}
+            className="flex items-center gap-2 text-lg font-bold"
+            style={hero ? undefined : { color: primary }}
           >
+            <span
+              aria-hidden
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
+              style={
+                hero
+                  ? { background: 'rgba(255,255,255,.2)' }
+                  : { background: primary, color: '#fff' }
+              }
+            >
+              {portal.name.charAt(0).toUpperCase()}
+            </span>
             {portal.name}
           </Link>
           {!portal.suspended && (
             <nav
-              className="flex flex-wrap gap-4 text-sm"
+              className="ml-auto flex flex-wrap items-center gap-5 text-sm"
               aria-label={t('portal-navigation', 'Portal navigation')}
             >
-              <Link href={`${base}/jobs`}>{t('jobs', 'Jobs')}</Link>
               <Link href={`${base}/about`}>{t('about', 'About')}</Link>
+              <Link href={`${base}/jobs`}>{t('jobs', 'Jobs')}</Link>
               <Link href={`${base}/contact`}>{t('contact', 'Contact')}</Link>
+              {session ? (
+                <>
+                  <Link href="/me/applications">
+                    {t('my-applications', 'My applications')}
+                  </Link>
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => signOut({ callbackUrl: base })}
+                  >
+                    {t('sign-out', 'Sign out')}
+                  </button>
+                </>
+              ) : (
+                <Link href="/auth/login">{t('sign-in', 'Sign in')}</Link>
+              )}
             </nav>
           )}
-          <div className="ml-auto flex items-center gap-3 text-sm">
-            {session ? (
-              <>
-                <Link href="/me/applications">
-                  {t('my-applications', 'My applications')}
-                </Link>
-                <button
-                  type="button"
-                  className="link"
-                  onClick={() => signOut({ callbackUrl: base })}
-                >
-                  {t('sign-out', 'Sign out')}
-                </button>
-              </>
-            ) : (
-              <Link href={`/auth/login`}>{t('sign-in', 'Sign in')}</Link>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
+        {hero && !portal.suspended && (
+          <div className="mx-auto max-w-6xl px-4 pb-10 pt-6">{hero}</div>
+        )}
+      </div>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className={`mx-auto px-4 py-8 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
         {portal.suspended ? (
           <div role="alert" className="alert alert-warning">
             {t(
@@ -134,12 +154,18 @@ const PortalLayout = ({
         )}
       </main>
 
-      <footer className="border-t py-6 text-center text-xs opacity-70">
-        <Link href={`${base}/privacy`}>
-          {t('privacy-policy', 'Privacy policy')}
-        </Link>
-        {' · '}
-        {portal.name}
+      <footer className="border-t py-6 text-xs opacity-70">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-1 px-4">
+          <span>{`© ${new Date().getFullYear()} ${portal.name}`}</span>
+          <Link href={`${base}/privacy`}>
+            {t('privacy-policy', 'Privacy policy')}
+          </Link>
+          <Link href={`${base}/contact`}>{t('contact', 'Contact')}</Link>
+          <a href={`${base}/sitemap.xml`}>{t('sitemap', 'Sitemap')}</a>
+          <span className="ml-auto">
+            {t('powered-by', 'Powered by')} <strong>{'Hirecraft'}</strong>
+          </span>
+        </div>
       </footer>
     </div>
   );

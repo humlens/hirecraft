@@ -19,7 +19,7 @@ export const applyTheme = (theme: Theme) => {
       break;
     case 'light':
       document.documentElement.classList.remove('dark');
-      document.documentElement.setAttribute('data-theme', 'corporate');
+      document.documentElement.setAttribute('data-theme', 'hirecraft');
       localStorage.setItem('theme', 'light');
       break;
     case 'system':
@@ -30,7 +30,7 @@ export const applyTheme = (theme: Theme) => {
         localStorage.removeItem('theme');
       } else {
         document.documentElement.classList.remove('dark');
-        document.documentElement.setAttribute('data-theme', 'corporate');
+        document.documentElement.setAttribute('data-theme', 'hirecraft');
         localStorage.removeItem('theme');
       }
       break;

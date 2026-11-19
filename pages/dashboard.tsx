@@ -19,7 +19,7 @@ const Dashboard: NextPageWithLayout = () => {
     }
 
     if (teams.length > 0) {
-      router.push(`/teams/${teams[0].slug}/settings`);
+      router.push(`/teams/${teams[0].slug}/dashboard`);
     } else if (candidate?.id) {
       router.push('/me');
     } else {

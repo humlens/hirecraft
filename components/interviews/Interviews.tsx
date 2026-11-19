@@ -131,9 +131,10 @@ export const InterviewDetail = ({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-medium">
-          {data.candidate.name} - {data.job.title}
+        <h2 className="font-display text-2xl font-bold">
+          {t('interview-feedback', 'Interview & feedback')}
         </h2>
+        <p className="text-sm opacity-70">{`${data.candidate.name} · ${data.job.title}`}</p>
         <p className="text-sm opacity-70">
           {t('round', 'Round')} {data.round} |{' '}
           {new Date(data.startsAt).toLocaleString()} | {data.durationMin}{' '}
@@ -172,47 +173,75 @@ export const InterviewDetail = ({
       {can('feedback.submit') &&
         data.participants.length > 0 &&
         data.status !== 'CANCELLED' && (
-          <section className="space-y-3 rounded border p-3">
-            <h3 className="font-semibold">{t('scorecard', 'Scorecard')}</h3>
+          <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+            <h3 className="font-display font-semibold">
+              {`2 · ${t('hm-scorecard', 'Hiring manager scorecard')}`}
+            </h3>
             {COMPETENCIES.map((c) => (
-              <div key={c} className="flex items-center gap-3 text-sm">
+              <div
+                key={c}
+                className="flex flex-wrap items-center gap-3 text-sm"
+              >
                 <span className="w-40">{c}</span>
-                <select
-                  className="select  select-sm"
-                  aria-label={c}
-                  value={scores[c] ?? ''}
-                  onChange={(e) =>
-                    setScores({ ...scores, [c]: Number(e.target.value) })
-                  }
-                >
-                  <option value="" disabled>
-                    -
-                  </option>
+                <div role="radiogroup" aria-label={c} className="flex gap-1">
                   {[1, 2, 3, 4].map((n) => (
-                    <option key={n} value={n}>
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={scores[c] === n}
+                      onClick={() => setScores({ ...scores, [c]: n })}
+                      className={`h-9 w-9 rounded-lg border text-sm ${
+                        scores[c] === n
+                          ? 'border-primary bg-primary font-semibold text-primary-content'
+                          : 'hover:bg-base-200'
+                      }`}
+                    >
                       {n}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             ))}
-            <select
-              className="select  select-sm"
+            <div
+              role="radiogroup"
               aria-label={t('recommendation', 'Recommendation')}
-              value={rec}
-              onChange={(e) => setRec(e.target.value)}
+              className="flex flex-wrap gap-2"
             >
-              {['STRONG_HIRE', 'HIRE', 'NO_HIRE', 'STRONG_NO_HIRE'].map((r) => (
-                <option key={r}>{r}</option>
+              {[
+                ['STRONG_HIRE', t('strong-hire', 'Strong hire')],
+                ['HIRE', t('hire', 'Hire')],
+                ['NO_HIRE', t('no-hire', 'No hire')],
+                ['STRONG_NO_HIRE', t('strong-no-hire', 'Strong no hire')],
+              ].map(([v, l]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={rec === v}
+                  onClick={() => setRec(v)}
+                  className={`rounded-full border px-3 py-1 text-sm ${
+                    rec === v
+                      ? 'border-primary bg-primary text-primary-content'
+                      : 'hover:bg-base-200'
+                  }`}
+                >
+                  {l}
+                </button>
               ))}
-            </select>
-            <textarea
-              className="textarea  w-full"
-              rows={3}
-              aria-label={t('notes', 'Notes')}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            </div>
+            <label className="block text-sm">
+              <span className="mb-1 block">
+                {t('evidence-notes', 'Evidence & notes')}
+              </span>
+              <textarea
+                className="textarea w-full"
+                rows={4}
+                aria-label={t('notes', 'Notes')}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </label>
             <button
               type="button"
               className="btn btn-sm btn-primary"
@@ -312,50 +341,92 @@ export const ScheduleInterview = ({
   };
 
   return (
-    <div className="space-y-2 rounded border p-3 text-sm">
-      <h4 className="font-semibold">
-        {t('schedule-interview', 'Schedule interview')}
+    <div className="space-y-3 rounded-2xl border bg-base-100 p-5 text-sm">
+      <h4 className="font-display font-semibold">
+        {`1 · ${t('schedule-interview', 'Schedule interview')}`}
       </h4>
-      <input
-        type="datetime-local"
-        className="input  input-sm"
-        aria-label={t('starts-at', 'Starts at')}
-        value={startsAt}
-        onChange={(e) => setStartsAt(e.target.value)}
-      />
-      <input
-        type="number"
-        className="input  input-sm ml-2 w-24"
-        aria-label={t('duration-min', 'Duration (min)')}
-        value={duration}
-        onChange={(e) => setDuration(e.target.value)}
-      />
-      <input
-        className="input  input-sm ml-2"
-        placeholder="https://meet..."
-        aria-label={t('meeting-link', 'Meeting link')}
-        value={link}
-        onChange={(e) => setLink(e.target.value)}
-      />
       <div className="flex flex-wrap gap-3">
-        {(people.data ?? []).map((p) => (
-          <label key={p.userId} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={picked.includes(p.userId)}
-              onChange={(e) =>
-                setPicked(
-                  e.target.checked
-                    ? [...picked, p.userId]
-                    : picked.filter((x) => x !== p.userId)
-                )
-              }
-            />
-            {p.name}
-          </label>
-        ))}
+        <label className="block">
+          <span className="mb-1 block opacity-70">
+            {t('starts-at', 'Starts at')}
+          </span>
+          <input
+            type="datetime-local"
+            className="input input-sm"
+            aria-label={t('starts-at', 'Starts at')}
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block opacity-70">
+            {t('duration-min', 'Duration (min)')}
+          </span>
+          <select
+            className="select select-sm"
+            aria-label={t('duration-min', 'Duration (min)')}
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+          >
+            {['30', '45', '60', '90'].map((d) => (
+              <option key={d} value={d}>
+                {`${d} ${t('minutes-short', 'min')}`}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+      <div>
+        <span className="mb-1 block opacity-70">
+          {t('interviewers', 'Interviewers')}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {(people.data ?? []).map((p) => {
+            const on = picked.includes(p.userId);
+
+            return (
+              <label
+                key={p.userId}
+                className={`flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 ${
+                  on ? 'border-primary bg-primary/10 text-primary' : ''
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={on}
+                  onChange={(e) =>
+                    setPicked(
+                      e.target.checked
+                        ? [...picked, p.userId]
+                        : picked.filter((x) => x !== p.userId)
+                    )
+                  }
+                />
+                {`${on ? '✓ ' : ''}${p.name}`}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+      <label className="block">
+        <span className="mb-1 block opacity-70">
+          {t('meeting-link', 'Meeting link')}
+        </span>
+        <input
+          className="input input-sm w-full"
+          placeholder="https://meet..."
+          aria-label={t('meeting-link', 'Meeting link')}
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+        />
+      </label>
+      <p className="text-xs opacity-70">
+        {t(
+          'invite-approval-note',
+          'The candidate gets an invitation that you approve first.'
+        )}
+      </p>
       <button
         type="button"
         className="btn btn-sm btn-primary"

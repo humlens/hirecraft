@@ -10,9 +10,7 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <>
-      <h1 className="mb-6 text-2xl font-bold">
-        {t('my-dashboard-title', 'My dashboard')}
-      </h1>
+      <h1 className="sr-only">{t('my-dashboard-title', 'My dashboard')}</h1>
       <Dashboard />
     </>
   );
