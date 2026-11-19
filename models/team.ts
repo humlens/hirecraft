@@ -15,7 +15,7 @@ export const createTeam = async (param: {
   slug: string;
   portal?: Pick<
     Parameters<typeof createPortal>[0],
-    'profile' | 'branding' | 'completeOnboarding'
+    'profile' | 'branding' | 'completeOnboarding' | 'template'
   >;
 }) => {
   const { userId, name, slug } = param;

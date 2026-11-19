@@ -1,3 +1,4 @@
+import type { JobAttributes } from '@/lib/industryTemplates';
 import { assertEntitlement, recordUsage } from '@/lib/entitlements';
 import { Prisma, type JobAssignmentKind } from '@prisma/client';
 import { ApiError } from '@/lib/errors';
@@ -50,6 +51,7 @@ export const toJobView = (job: JobRow, now = new Date()) => ({
   vacancies: job.vacancies,
   benefits: job.benefits,
   companyInfoOverride: job.companyInfoOverride,
+  attributes: job.attributes as JobAttributes,
   createdAt: job.createdAt,
   updatedAt: job.updatedAt,
   skills: job.skills.map((s) => ({ skill: s.skill, required: s.required })),
@@ -434,6 +436,7 @@ export async function runJobAction(
             vacancies: job.vacancies,
             benefits: job.benefits,
             companyInfoOverride: job.companyInfoOverride,
+            attributes: job.attributes ?? {},
             createdById: ctx.user.id,
             skills: {
               create: job.skills.map((s) => ({

@@ -111,7 +111,7 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
           error={formik.errors.email}
           onChange={formik.handleChange}
         />
-        <div className="relative flex">
+        <div>
           <InputWithLabel
             type={isPasswordVisible ? 'text' : 'password'}
             label={t('password')}
@@ -119,11 +119,13 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
             placeholder={t('password')}
             value={formik.values.password}
             error={formik.errors.password}
+            trailing={
+              <TogglePasswordVisibility
+                isPasswordVisible={isPasswordVisible}
+                handlePasswordVisibility={handlePasswordVisibility}
+              />
+            }
             onChange={formik.handleChange}
-          />
-          <TogglePasswordVisibility
-            isPasswordVisible={isPasswordVisible}
-            handlePasswordVisibility={handlePasswordVisibility}
           />
         </div>
         <GoogleReCAPTCHA

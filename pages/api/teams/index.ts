@@ -64,6 +64,7 @@ const handlePOST = async (req: NextApiRequest, res: NextApiResponse) => {
       profile: input.profile,
       branding: input.branding,
       completeOnboarding: input.completeOnboarding,
+      template: input.template,
     },
   });
 

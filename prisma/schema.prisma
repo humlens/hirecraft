@@ -447,6 +447,7 @@ model Job {
   vacancies           Int                          @default(1)
   benefits            String[]                     @default([])
   companyInfoOverride String?                      @db.Text
+  attributes          Json                         @default("{}")
   createdById         String?
   deletedAt           DateTime?
   createdAt           DateTime                     @default(now())

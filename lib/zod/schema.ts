@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { INDUSTRY_KEYS, jobAttributesSchema } from '../industryTemplates';
 import { slugify } from '../server-common';
 import { isPermissionKey } from '../portal-roles';
 import {
@@ -101,6 +102,7 @@ export const createTeamSchema = z.object({
   profile: portalProfileSchema.optional(),
   branding: portalBrandingSchema.optional(),
   completeOnboarding: z.boolean().optional(),
+  template: z.enum(INDUSTRY_KEYS).optional(),
 });
 
 const permissionKeys = z
@@ -331,6 +333,7 @@ const jobBase = z.object({
     .max(10)
     .default([]),
   questions: z.array(jobQuestionSchema).max(20).default([]),
+  attributes: jobAttributesSchema,
 });
 
 const jobRanges = (
