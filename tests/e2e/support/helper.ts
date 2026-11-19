@@ -12,8 +12,8 @@ export const team = {
 } as const;
 
 export const secondTeam = {
-  name: 'BoxyHQ',
-  slug: 'boxyhq',
+  name: 'HireCraft Test',
+  slug: 'hirecraft-test',
 } as const;
 
 export async function cleanup() {

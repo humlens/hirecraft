@@ -19,13 +19,7 @@ const SECURITY_HEADERS = {
 const generateCSP = (): string => {
   const policies = {
     'default-src': ["'self'"],
-    'img-src': [
-      "'self'",
-      'boxyhq.com',
-      '*.boxyhq.com',
-      '*.dicebear.com',
-      'data:',
-    ],
+    'img-src': ["'self'", '*.dicebear.com', 'data:'],
     'script-src': [
       "'self'",
       "'unsafe-inline'",
@@ -38,7 +32,6 @@ const generateCSP = (): string => {
       "'self'",
       '*.google.com',
       '*.gstatic.com',
-      'boxyhq.com',
       '*.ingest.sentry.io',
       '*.mixpanel.com',
     ],

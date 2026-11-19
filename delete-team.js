@@ -8,7 +8,7 @@ const svix = process.env.SVIX_API_KEY
   ? new Svix(`${process.env.SVIX_API_KEY}`)
   : undefined;
 
-const product = process.env.JACKSON_PRODUCT_ID || 'boxyhq';
+const product = process.env.JACKSON_PRODUCT_ID || 'hirecraft';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -19,7 +19,7 @@ const jacksonOpts = {
   externalUrl: `${process.env.APP_URL}`,
   samlPath: '/api/oauth/saml',
   oidcPath: '/api/oauth/oidc',
-  samlAudience: 'https://saml.boxyhq.com',
+  samlAudience: process.env.SAML_ISSUER || 'urn:hirecraft:saml',
   db: {
     engine: 'sql',
     type: 'postgres',

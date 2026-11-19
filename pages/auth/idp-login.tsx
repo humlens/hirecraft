@@ -12,7 +12,7 @@ export default function SAMLIdPLogin() {
       return;
     }
 
-    signIn('boxyhq-idp', {
+    signIn('idp-sso', {
       callbackUrl: '/dashboard',
       code: query?.code,
     });

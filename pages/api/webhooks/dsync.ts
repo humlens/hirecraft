@@ -30,6 +30,7 @@ export default async function handler(
 }
 
 const verifyWebhookSignature = (req: NextApiRequest) => {
+  // Header name is fixed by the directory sync library that sends the webhook
   const signatureHeader = req.headers['boxyhq-signature'] as string;
 
   if (!signatureHeader) {

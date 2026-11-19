@@ -61,7 +61,7 @@ const SSO: NextPageWithLayout<
         toast.error(t('multiple-sso-teams'));
         return;
       }
-      await signIn('boxyhq-saml', undefined, {
+      await signIn('saml-sso', undefined, {
         tenant: data.teamId,
         product: jacksonProductId,
       });
@@ -89,7 +89,7 @@ const SSO: NextPageWithLayout<
                 type="email"
                 label="Email"
                 name="email"
-                placeholder="user@boxyhq.com"
+                placeholder="user@company.com"
                 value={formik.values.email}
                 error={formik.touched.email ? formik.errors.email : undefined}
                 onChange={formik.handleChange}
@@ -99,7 +99,7 @@ const SSO: NextPageWithLayout<
                 type="text"
                 label="Team slug"
                 name="slug"
-                placeholder="boxyhq"
+                placeholder="acme"
                 value={formik.values.slug}
                 descriptionText="Contact your administrator to get your team slug"
                 error={formik.touched.slug ? formik.errors.slug : undefined}

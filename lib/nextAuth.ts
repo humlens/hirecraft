@@ -4,7 +4,7 @@ import type {
   GetServerSidePropsContext,
 } from 'next';
 import { Account, NextAuthOptions, Profile, User } from 'next-auth';
-import BoxyHQSAMLProvider from 'next-auth/providers/boxyhq-saml';
+import SAMLProvider from './samlProvider';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import EmailProvider from 'next-auth/providers/email';
 import GitHubProvider from 'next-auth/providers/github';
@@ -128,7 +128,7 @@ if (isAuthProviderEnabled('google')) {
 
 if (isAuthProviderEnabled('saml')) {
   providers.push(
-    BoxyHQSAMLProvider({
+    SAMLProvider({
       authorization: { params: { scope: '' } },
       issuer: env.jackson.selfHosted ? env.jackson.externalUrl : env.appUrl,
       clientId: 'dummy',
@@ -143,7 +143,7 @@ if (isAuthProviderEnabled('saml')) {
 if (isAuthProviderEnabled('idp-initiated')) {
   providers.push(
     CredentialsProvider({
-      id: 'boxyhq-idp',
+      id: 'idp-sso',
       name: 'IdP Login',
       credentials: {
         code: {
@@ -266,7 +266,7 @@ export const getAuthOptions = (
     (req as NextApiRequest).query &&
     (req as NextApiRequest).query.nextauth?.includes('callback') &&
     ((req as NextApiRequest).query.nextauth?.includes('credentials') ||
-      (req as NextApiRequest).query.nextauth?.includes('boxyhq-idp')) &&
+      (req as NextApiRequest).query.nextauth?.includes('idp-sso')) &&
     req.method === 'POST' &&
     env.nextAuth.sessionStrategy === 'database';
 
@@ -293,7 +293,7 @@ export const getAuthOptions = (
         }
 
         const existingUser = await getUser({ email: user.email });
-        const isIdpLogin = account.provider === 'boxyhq-idp';
+        const isIdpLogin = account.provider === 'idp-sso';
 
         // Handle credentials provider
         if (isCredentialsProviderCallbackWithDbSession && !isIdpLogin) {
@@ -322,7 +322,7 @@ export const getAuthOptions = (
             await linkToTeam(user as unknown as Profile, newUser.id);
           }
 
-          if (account.provider === 'boxyhq-saml' && profile) {
+          if (account.provider === 'saml-sso' && profile) {
             await linkToTeam(profile, newUser.id);
           }
 
@@ -376,7 +376,7 @@ export const getAuthOptions = (
       },
 
       async jwt({ token, trigger, session, account }) {
-        if (trigger === 'signIn' && account?.provider === 'boxyhq-idp') {
+        if (trigger === 'signIn' && account?.provider === 'idp-sso') {
           const userByAccount = await adapter.getUserByAccount!({
             providerAccountId: account.providerAccountId,
             provider: account.provider,
