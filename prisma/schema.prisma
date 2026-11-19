@@ -1067,6 +1067,7 @@ model AIProviderConfig {
   encryptedApiKey  String?    @db.Text
   keyHint          String?
   modelByTier      Json       @default("{}")
+  tierByFeature    Json       @default("{}")
   embeddingModel   String?
   enabledFeatures  Json       @default("{}")
   logRetentionDays Int        @default(30)

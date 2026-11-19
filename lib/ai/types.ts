@@ -1,6 +1,6 @@
 import type { ZodType } from 'zod';
 
-export type Tier = 'fast' | 'standard';
+export type Tier = 'fast' | 'standard' | 'best';
 
 export type Usage = { inputTokens: number; outputTokens: number };
 

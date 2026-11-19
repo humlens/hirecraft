@@ -1,4 +1,5 @@
 import { Error, Loading } from '@/components/shared';
+import SettingsNav from '@/components/shared/shell/SettingsNav';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
@@ -63,7 +64,7 @@ const Webhook = ({
   return (
     <div className="space-y-2">
       <input
-        className="input  input-sm w-full"
+        className="input input-sm w-full"
         aria-label={`${app.name} URL`}
         placeholder="https://partner.example.com/hooks"
         value={url}
@@ -72,7 +73,7 @@ const Webhook = ({
       <input
         type="password"
         autoComplete="off"
-        className="input  input-sm w-full"
+        className="input input-sm w-full"
         aria-label={`${app.name} signing secret`}
         placeholder={
           app.config?.hasSecret
@@ -111,10 +112,12 @@ const DomainCard = ({ slug, enabled }: { slug: string; enabled: boolean }) => {
   };
 
   return (
-    <section className="space-y-3 rounded-xl border p-4">
+    <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{t('domain-title', 'Custom domain')}</h3>
-        <span className="badge badge-sm">
+        <h3 className="font-display text-lg font-semibold">
+          {t('domain-title', 'Custom domain')}
+        </h3>
+        <span className="badge badge-primary badge-soft">
           {t('plan-enterprise', 'Enterprise')}
         </span>
       </div>
@@ -132,7 +135,7 @@ const DomainCard = ({ slug, enabled }: { slug: string; enabled: boolean }) => {
           }}
         >
           <input
-            className="input  input-sm min-w-60 flex-1"
+            className="input min-w-60 flex-1"
             aria-label={t('domain-host', 'Domain')}
             placeholder="careers.example.com"
             value={host}
@@ -221,6 +224,16 @@ const Integrations = ({
   const { t } = useTranslation('common');
   const router = useRouter();
   const apps = useApi<App[]>(`/api/teams/${slug}/integrations`);
+  const summary = useApi<{
+    webhooks: {
+      id: string;
+      url: string;
+      eventTypes: string[];
+    }[];
+    sso: { active: boolean; provider: string | null } | null;
+    dsync: { active: boolean } | null;
+    apiKeys: number | null;
+  }>(`/api/teams/${slug}/integrations/summary`);
 
   if (apps.isLoading) return <Loading />;
   if (apps.isError) return <Error message={apps.isError.message} />;
@@ -248,10 +261,13 @@ const Integrations = ({
     apps.refresh();
   };
 
+  const sum = summary.data;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <SettingsNav slug={slug} />
       <div>
-        <h2 className="text-xl font-medium">
+        <h2 className="font-display text-3xl font-bold">
           {t('int-title', 'Integrations, webhooks & domain')}
         </h2>
         <p className="text-sm opacity-70">
@@ -268,75 +284,62 @@ const Integrations = ({
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(apps.data ?? []).map((a) => (
-          <article
-            key={a.key}
-            className="flex flex-col gap-2 rounded-xl border p-4"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <strong>{a.name}</strong>
-              {a.connected && (
-                <span className="badge badge-success badge-sm">
-                  {t('int-on', 'Connected')}
-                </span>
+      <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+        <h3 className="font-display text-lg font-semibold">
+          {t('int-apps', 'Apps')}
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(apps.data ?? []).map((a) => (
+            <article
+              key={a.key}
+              className="flex flex-col gap-2 rounded-xl border p-4"
+            >
+              <strong className="font-display">{a.name}</strong>
+              <p className="text-sm opacity-70">{a.description}</p>
+              {a.accountLabel && <p className="text-xs">{a.accountLabel}</p>}
+              {a.lastError && (
+                <p className="text-xs text-warning">{a.lastError}</p>
               )}
-            </div>
-            <p className="text-sm opacity-70">{a.description}</p>
-            {a.accountLabel && <p className="text-xs">{a.accountLabel}</p>}
-            {a.lastError && (
-              <p className="text-xs text-warning">{a.lastError}</p>
-            )}
 
-            {!a.entitled && (
-              <p className="text-xs text-warning">
-                {t(
-                  'int-upgrade',
-                  'Not included in your plan. Upgrade to use it.'
-                )}
-              </p>
-            )}
-            {a.entitled && a.auth === 'oauth' && !a.availableOnServer && (
-              <p className="text-xs opacity-70">
-                {t('int-not-configured', 'Not configured on this server.')}
-              </p>
-            )}
-            {a.entitled &&
-              a.auth === 'oauth' &&
-              a.availableOnServer &&
-              !a.connected && (
-                <button
-                  type="button"
-                  className="btn btn-sm min-h-10"
-                  onClick={() => connect(a)}
-                >
-                  {t('int-connect', 'Connect')}
-                </button>
+              {!a.entitled && (
+                <p className="text-xs text-warning">
+                  {t(
+                    'int-upgrade',
+                    'Not included in your plan. Upgrade to use it.'
+                  )}
+                </p>
               )}
-            {a.entitled && a.auth === 'oauth' && a.connected && (
-              <>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    checked={a.config?.video !== false}
-                    onChange={(e) => toggleVideo(a, e.target.checked)}
-                  />
-                  {t('int-video', 'Create meeting links')}
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost text-error"
-                  onClick={() => disconnect(a)}
-                >
-                  {t('int-disconnect', 'Disconnect')}
-                </button>
-              </>
-            )}
-            {a.entitled && a.auth === 'webhook' && (
-              <>
-                <Webhook slug={slug} app={a} refresh={apps.refresh} />
-                {a.connected && (
+              {a.entitled && a.auth === 'oauth' && !a.availableOnServer && (
+                <p className="text-xs opacity-70">
+                  {t('int-not-configured', 'Not configured on this server.')}
+                </p>
+              )}
+              {a.entitled &&
+                a.auth === 'oauth' &&
+                a.availableOnServer &&
+                !a.connected && (
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => connect(a)}
+                  >
+                    {t('int-connect', 'Connect')}
+                  </button>
+                )}
+              {a.entitled && a.auth === 'oauth' && a.connected && (
+                <>
+                  <span className="rounded-xl bg-success/15 px-4 py-2 text-center font-semibold text-success">
+                    {`${t('int-on', 'Connected')} ✓`}
+                  </span>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={a.config?.video !== false}
+                      onChange={(e) => toggleVideo(a, e.target.checked)}
+                    />
+                    {t('int-video', 'Create meeting links')}
+                  </label>
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost text-error"
@@ -344,58 +347,112 @@ const Integrations = ({
                   >
                     {t('int-disconnect', 'Disconnect')}
                   </button>
-                )}
-              </>
-            )}
-            {a.auth === 'link' && teamFeatures.webhook && (
-              <Link
-                className="btn btn-sm min-h-10"
-                href={`/teams/${slug}/${a.href}`}
-              >
-                {t('int-open-webhooks', 'Open webhooks')}
-              </Link>
-            )}
-          </article>
-        ))}
-      </div>
-
-      <DomainCard slug={slug} enabled />
-
-      <section className="space-y-1 rounded-xl border p-4 text-sm">
-        <h3 className="font-semibold">
-          {t('int-sso', 'Single sign-on, provisioning & API')}
-        </h3>
-        <ul className="list-disc pl-5">
-          {teamFeatures.sso && (
-            <li>
-              <Link className="link" href={`/teams/${slug}/sso`}>
-                {t('int-link-sso', 'SAML single sign-on')}
-              </Link>
-            </li>
-          )}
-          {teamFeatures.dsync && (
-            <li>
-              <Link className="link" href={`/teams/${slug}/directory-sync`}>
-                {t('int-link-scim', 'SCIM directory sync')}
-              </Link>
-            </li>
-          )}
-          {teamFeatures.webhook && (
-            <li>
-              <Link className="link" href={`/teams/${slug}/webhooks`}>
-                {t('int-link-webhooks', 'Webhooks')}
-              </Link>
-            </li>
-          )}
-          {teamFeatures.apiKey && (
-            <li>
-              <Link className="link" href={`/teams/${slug}/api-keys`}>
-                {t('int-link-api', 'API keys')}
-              </Link>
-            </li>
-          )}
-        </ul>
+                </>
+              )}
+              {a.entitled && a.auth === 'webhook' && (
+                <>
+                  {a.connected && (
+                    <span className="rounded-xl bg-success/15 px-4 py-2 text-center font-semibold text-success">
+                      {`${t('int-on', 'Connected')} ✓`}
+                    </span>
+                  )}
+                  <Webhook slug={slug} app={a} refresh={apps.refresh} />
+                  {a.connected && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost text-error"
+                      onClick={() => disconnect(a)}
+                    >
+                      {t('int-disconnect', 'Disconnect')}
+                    </button>
+                  )}
+                </>
+              )}
+              {a.auth === 'link' && teamFeatures.webhook && (
+                <Link
+                  className="btn btn-outline"
+                  href={`/teams/${slug}/${a.href}`}
+                >
+                  {t('int-open-webhooks', 'Open webhooks')}
+                </Link>
+              )}
+            </article>
+          ))}
+        </div>
       </section>
+
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <DomainCard slug={slug} enabled />
+
+        <section className="space-y-4 rounded-2xl border bg-base-100 p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">
+              {t('int-webhooks', 'Webhooks')}
+            </h3>
+            {teamFeatures.webhook && (
+              <Link
+                className="btn btn-outline"
+                href={`/teams/${slug}/webhooks`}
+              >
+                {`+ ${t('int-endpoint', 'Endpoint')}`}
+              </Link>
+            )}
+          </div>
+          {(sum?.webhooks ?? []).map((w) => (
+            <div key={w.id} className="space-y-1 rounded-xl border p-3 text-sm">
+              <code className="break-all rounded bg-base-200 px-1.5 py-0.5">
+                {w.url}
+              </code>
+              <div className="flex flex-wrap gap-1.5">
+                {w.eventTypes.map((e) => (
+                  <code key={e} className="rounded bg-base-200 px-1.5 py-0.5">
+                    {e}
+                  </code>
+                ))}
+              </div>
+              <p className="opacity-70">{t('int-signed', 'Signed payloads')}</p>
+            </div>
+          ))}
+          {teamFeatures.webhook && sum?.webhooks.length === 0 && (
+            <p className="text-sm opacity-70">
+              {t('int-no-endpoints', 'No webhook endpoints yet.')}
+            </p>
+          )}
+          <div className="space-y-1 border-t pt-3 text-sm">
+            <h4 className="font-display font-semibold">
+              {t('int-sso', 'Single sign-on & provisioning')}
+            </h4>
+            <p>
+              {teamFeatures.sso && (
+                <Link className="link" href={`/teams/${slug}/sso`}>
+                  {`${t('int-link-sso', 'SAML SSO')}: ${
+                    sum?.sso?.active
+                      ? `${sum.sso.provider ?? ''} · ${t('active', 'active')}`
+                      : t('int-off', 'not set up')
+                  }`}
+                </Link>
+              )}
+              {teamFeatures.sso && teamFeatures.dsync && ' · '}
+              {teamFeatures.dsync && (
+                <Link className="link" href={`/teams/${slug}/directory-sync`}>
+                  {`${t('int-link-scim', 'SCIM directory sync')}: ${
+                    sum?.dsync?.active
+                      ? t('active', 'active')
+                      : t('int-off', 'not set up')
+                  }`}
+                </Link>
+              )}
+            </p>
+            {teamFeatures.apiKey && (
+              <p>
+                <Link className="link" href={`/teams/${slug}/api-keys`}>
+                  {`${t('int-link-api', 'API keys')}: ${sum?.apiKeys ?? 0}`}
+                </Link>
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

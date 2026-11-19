@@ -60,6 +60,8 @@ const load = () => ({
   offerApi: require('pages/api/teams/[slug]/offers/[offerId]/index').default,
   searchApi: require('pages/api/teams/[slug]/talent/search').default,
   talentApi: require('pages/api/teams/[slug]/talent/index').default,
+  aiSettingsApi: require('pages/api/teams/[slug]/ai/settings').default,
+  invoicesApi: require('pages/api/teams/[slug]/payments/invoices').default,
   exportApi: require('pages/api/teams/[slug]/talent/export').default,
 });
 
@@ -456,6 +458,59 @@ suite('phase 7: analytics, automation, offers, talent (integration)', () => {
       expect(r.text).toContain(`ex1-${run}@cand7.com`);
       expect(r.text).not.toContain(`ex2-${run}@cand7.com`);
       expect(b.candidateId).toBeTruthy();
+    });
+  });
+
+  describe('AI settings: per-feature tiers', () => {
+    it('stores a tier per feature and reports prompt version and roles', async () => {
+      const put = await call(m.aiSettingsApi, 'owner', {
+        method: 'PUT',
+        query: { slug },
+        body: {
+          provider: 'OPENAI',
+          tierByFeature: { 'match.assess': 'best', 'jd.generate': 'fast' },
+          enabledFeatures: {},
+          logRetentionDays: 90,
+        },
+      });
+
+      expect(put.status).toBe(200);
+
+      const get = await call(m.aiSettingsApi, 'owner', { query: { slug } });
+      const f = (k: string) =>
+        get.json.data.features.find((x: any) => x.key === k);
+
+      expect(f('match.assess')).toMatchObject({
+        tier: 'best',
+        defaultTier: 'standard',
+        roles: 'Recruiter+',
+      });
+      expect(f('match.assess').prompt).toMatch(/^match-assess v\d+$/);
+      expect(f('resume.parse').tier).toBe('standard');
+      expect(get.json.data.logRetentionDays).toBe(90);
+
+      const bad = await call(m.aiSettingsApi, 'owner', {
+        method: 'PUT',
+        query: { slug },
+        body: {
+          provider: 'OPENAI',
+          tierByFeature: { 'nope.feature': 'fast' },
+        },
+      });
+
+      expect(bad.status).toBe(422);
+    });
+  });
+
+  describe('billing history', () => {
+    it('is empty without a Stripe customer and needs billing.manage', async () => {
+      const ok = await call(m.invoicesApi, 'owner', { query: { slug } });
+
+      expect(ok.status).toBe(200);
+      expect(ok.json.data).toEqual([]);
+      expect(
+        (await call(m.invoicesApi, 'rec', { query: { slug } })).status
+      ).toBe(403);
     });
   });
 });

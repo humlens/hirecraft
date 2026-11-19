@@ -188,6 +188,8 @@ export type FeatureDef<T = unknown> = {
   /** Candidate-side features have no portal and no `ai.use` check */
   candidateSide?: boolean;
   label: string;
+  /** who may use it, as shown on the AI settings page */
+  roles: string;
 };
 
 export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
@@ -198,6 +200,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     credits: 5,
     candidateSide: true,
     label: 'Resume parsing',
+    roles: 'All',
   },
   'jd.generate': {
     key: 'jd.generate',
@@ -205,6 +208,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'fast',
     credits: 2,
     label: 'Job description generator',
+    roles: 'Recruiter+',
   },
   'match.assess': {
     key: 'match.assess',
@@ -212,6 +216,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'standard',
     credits: 3,
     label: 'Candidate matching',
+    roles: 'Recruiter+',
   },
   'search.parse': {
     key: 'search.parse',
@@ -219,6 +224,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'fast',
     credits: 1,
     label: 'Natural-language search',
+    roles: 'Recruiter+',
   },
   'interview.questions': {
     key: 'interview.questions',
@@ -226,6 +232,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'fast',
     credits: 2,
     label: 'Interview assistant',
+    roles: 'Hiring Mgr+',
   },
   'interview.summary': {
     key: 'interview.summary',
@@ -233,6 +240,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'standard',
     credits: 2,
     label: 'Feedback summary',
+    roles: 'Hiring Mgr+',
   },
   'comms.draft': {
     key: 'comms.draft',
@@ -240,6 +248,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'fast',
     credits: 2,
     label: 'Candidate communication drafts',
+    roles: 'Recruiter+',
   },
   'copilot.step': {
     key: 'copilot.step',
@@ -247,6 +256,7 @@ export const FEATURES: { [K in FeatureKey]: FeatureDef<FeatureOutputs[K]> } = {
     tier: 'standard',
     credits: 1,
     label: 'Copilot',
+    roles: 'Recruiter+',
   },
 };
 
