@@ -1,3 +1,4 @@
+import { Panel, PageHeader, Notice, Field } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -243,8 +244,7 @@ export const OfferDetail = ({
     label: string,
     placeholder = ''
   ) => (
-    <label className="block text-sm">
-      <span className="mb-1 block font-semibold">{label}</span>
+    <Field label={label}>
       <input
         className="input w-full"
         aria-label={label}
@@ -254,24 +254,20 @@ export const OfferDetail = ({
         value={form[k]}
         onChange={(e) => setForm({ ...form, [k]: e.target.value })}
       />
-    </label>
+    </Field>
   );
   const band = data.band;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="mr-auto">
-          <p className="text-sm opacity-70">{`${data.candidate.name} · ${data.job.title}`}</p>
-          <h2 className="font-display text-3xl font-bold">
-            {t('offer', 'Offer')}
-          </h2>
-        </div>
-        <span className="badge badge-lg">{data.status}</span>
-      </div>
+      <PageHeader
+        eyebrow={`${data.candidate.name} · ${data.job.title}`}
+        title={t('offer', 'Offer')}
+        actions={<span className="badge badge-lg">{data.status}</span>}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="space-y-4 rounded-2xl border bg-base-100 p-6">
+        <Panel pad="lg" className="space-y-4">
           <h3 className="font-display text-lg font-semibold">
             {t('compensation-terms', 'Compensation & terms')}
           </h3>
@@ -286,10 +282,7 @@ export const OfferDetail = ({
               `${t('joining-bonus', 'Joining bonus')} (${data.currency})`
             )}
             {field('equityNote', t('equity', 'ESOPs'))}
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">
-                {t('start-date', 'Start date')}
-              </span>
+            <Field label={t('start-date', 'Start date')}>
               <input
                 type="date"
                 className="input w-full"
@@ -300,11 +293,8 @@ export const OfferDetail = ({
                   setForm({ ...form, startDate: e.target.value })
                 }
               />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">
-                {t('offer-expires', 'Offer expires')}
-              </span>
+            </Field>
+            <Field label={t('offer-expires', 'Offer expires')}>
               <input
                 type="date"
                 className="input w-full"
@@ -315,7 +305,7 @@ export const OfferDetail = ({
                   setForm({ ...form, expiresAt: e.target.value })
                 }
               />
-            </label>
+            </Field>
           </div>
 
           <div className="flex items-center justify-between rounded-xl bg-base-200 px-4 py-3">
@@ -326,13 +316,9 @@ export const OfferDetail = ({
           </div>
 
           {band.status !== 'NONE' && (
-            <p
+            <Notice
               role="status"
-              className={`rounded-xl border p-3 text-sm ${
-                band.status === 'WITHIN'
-                  ? 'border-warning/50 bg-warning/10'
-                  : 'border-error/50 bg-error/10'
-              }`}
+              tone={band.status === 'WITHIN' ? 'warning' : 'error'}
             >
               <strong>{t('band-check', 'Band check:')}</strong>{' '}
               {band.status === 'WITHIN'
@@ -354,13 +340,10 @@ export const OfferDetail = ({
                     )}
               {band.expected != null &&
                 ` ${t('candidate-expected', 'Candidate expected')} ${lakh(band.expected)}.`}
-            </p>
+            </Notice>
           )}
 
-          <label className="block text-sm">
-            <span className="mb-1 block font-semibold">
-              {t('letter-template', 'Letter template')}
-            </span>
+          <Field label={t('letter-template', 'Letter template')}>
             <select
               className="select w-full"
               aria-label={t('letter-template', 'Letter template')}
@@ -376,16 +359,16 @@ export const OfferDetail = ({
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {draft && (
             <button type="button" className="btn btn-outline" onClick={save}>
               {t('save-changes', 'Save changes')}
             </button>
           )}
-        </section>
+        </Panel>
 
         <div className="space-y-4">
-          <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+          <Panel pad="lg" className="space-y-3">
             <h3 className="font-display text-lg font-semibold">
               {t('approval-chain', 'Approval chain')}
             </h3>
@@ -531,7 +514,7 @@ export const OfferDetail = ({
                 {t('send-offer', 'Send offer to candidate')}
               </button>
             )}
-          </section>
+          </Panel>
         </div>
       </div>
     </div>

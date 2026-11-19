@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import InterviewAssist from '@/components/ai/InterviewAssist';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
@@ -173,7 +174,7 @@ export const InterviewDetail = ({
       {can('feedback.submit') &&
         data.participants.length > 0 &&
         data.status !== 'CANCELLED' && (
-          <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+          <Panel className="space-y-3">
             <h3 className="font-display font-semibold">
               {`2 · ${t('hm-scorecard', 'Hiring manager scorecard')}`}
             </h3>
@@ -250,7 +251,7 @@ export const InterviewDetail = ({
             >
               {t('submit-feedback', 'Submit feedback')}
             </button>
-          </section>
+          </Panel>
         )}
 
       {can('ai.use') && can('interviews.manage') && (
@@ -341,7 +342,7 @@ export const ScheduleInterview = ({
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border bg-base-100 p-5 text-sm">
+    <Panel as="div" className="space-y-3 text-sm">
       <h4 className="font-display font-semibold">
         {`1 · ${t('schedule-interview', 'Schedule interview')}`}
       </h4>
@@ -435,6 +436,6 @@ export const ScheduleInterview = ({
       >
         {t('schedule', 'Schedule')}
       </button>
-    </div>
+    </Panel>
   );
 };

@@ -1,3 +1,4 @@
+import { Panel, Stepper } from '@/components/ui';
 import { Loading } from '@/components/shared';
 import PortalLayout, {
   primaryButtonStyle,
@@ -212,28 +213,14 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
         </div>
       </div>
 
-      <ol
-        className="mx-auto mb-6 flex max-w-2xl flex-wrap gap-2 text-sm"
-        aria-label={t('progress', 'Progress')}
-      >
-        {steps.map((st, i) => (
-          <li
-            key={st.label}
-            aria-current={i === currentStep ? 'step' : undefined}
-            className={`rounded-full px-3 py-1 ${
-              i === currentStep
-                ? 'font-semibold text-white'
-                : st.done
-                  ? 'bg-success/15 text-success'
-                  : 'border opacity-60'
-            }`}
-            style={i === currentStep ? { backgroundColor: primary } : undefined}
-          >
-            {st.done && i !== currentStep ? '✓ ' : ''}
-            {st.label}
-          </li>
-        ))}
-      </ol>
+      <div className="mx-auto mb-6 max-w-2xl">
+        <Stepper
+          label={t('progress', 'Progress')}
+          steps={steps}
+          current={currentStep}
+          color={primary}
+        />
+      </div>
 
       {status === 'loading' && <Loading />}
 
@@ -249,9 +236,11 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
       )}
 
       {!done && status === 'unauthenticated' && (
-        <form
+        <Panel
+          as="form"
+          pad="lg"
+          className="mx-auto max-w-md space-y-3"
           onSubmit={submitAuth}
-          className="mx-auto max-w-md space-y-3 rounded-2xl border bg-base-100 p-6"
         >
           <div role="tablist" className="tabs tabs-boxed">
             <button
@@ -323,12 +312,12 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
               ? t('create-account-continue', 'Create account and continue')
               : t('sign-in', 'Sign in')}
           </button>
-        </form>
+        </Panel>
       )}
 
       {!done && status === 'authenticated' && (
         <form onSubmit={submit} className="mx-auto max-w-2xl space-y-6">
-          <fieldset className="space-y-3 rounded-2xl border bg-base-100 p-6">
+          <Panel as="fieldset" pad="lg" className="space-y-3">
             <legend className="px-1 font-display text-lg font-semibold">
               {t('upload-your-resume', 'Upload your resume')}
             </legend>
@@ -379,10 +368,10 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                 }
               />
             </label>
-          </fieldset>
+          </Panel>
 
           {job.questions.length > 0 && (
-            <fieldset className="space-y-4 rounded-2xl border bg-base-100 p-6">
+            <Panel as="fieldset" pad="lg" className="space-y-4">
               <legend className="px-1 font-display text-lg font-semibold">
                 {t('screening-questions', 'Screening questions')}
               </legend>
@@ -466,10 +455,10 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                     ))}
                 </div>
               ))}
-            </fieldset>
+            </Panel>
           )}
 
-          <fieldset className="space-y-2 rounded-2xl border bg-base-100 p-6 text-sm">
+          <Panel as="fieldset" pad="lg" className="space-y-2 text-sm">
             <legend className="px-1 font-display text-lg font-semibold">
               {t('consent', 'Consent')}
             </legend>
@@ -520,7 +509,7 @@ const ApplyPage: NextPageWithLayout<Props> = ({ job, ...layout }) => {
                 )}
               </span>
             </label>
-          </fieldset>
+          </Panel>
 
           {error && (
             <p role="alert" className="text-sm text-error">

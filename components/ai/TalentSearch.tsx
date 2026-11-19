@@ -1,3 +1,4 @@
+import { Panel, Chip } from '@/components/ui';
 import { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
@@ -108,7 +109,7 @@ const TalentSearch = ({
   };
 
   return (
-    <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+    <Panel className="space-y-3">
       <form
         className="flex items-center gap-2 rounded-xl border px-3 py-1.5"
         onSubmit={(e) => {
@@ -156,17 +157,15 @@ const TalentSearch = ({
               : t('talent-filters', 'Filters:')}
           </span>
           {chipsOf(filters).map((c) => (
-            <button
+            <Chip
               key={`${c.k}:${c.v}`}
-              type="button"
-              className="rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1 text-sm text-secondary"
-              aria-label={t('remove-filter', 'Remove filter {{label}}', {
+              removeLabel={t('remove-filter', 'Remove filter {{label}}', {
                 label: c.label,
               })}
-              onClick={() => remove(c)}
+              onRemove={() => remove(c)}
             >
-              {`${c.label} ×`}
-            </button>
+              {c.label}
+            </Chip>
           ))}
           <span className="ml-auto text-xs opacity-60">
             {t(
@@ -176,7 +175,7 @@ const TalentSearch = ({
           </span>
         </div>
       )}
-    </section>
+    </Panel>
   );
 };
 

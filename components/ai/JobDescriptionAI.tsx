@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
@@ -51,7 +52,7 @@ const JobDescriptionAI = ({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border bg-base-100 p-5">
+    <Panel className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <span className="text-secondary" aria-hidden="true">
@@ -103,7 +104,7 @@ const JobDescriptionAI = ({
           {t('ai-write-jd', 'Write with AI')}
         </button>
       </div>
-    </section>
+    </Panel>
   );
 };
 

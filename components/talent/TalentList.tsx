@@ -1,3 +1,4 @@
+import { Panel, PageHeader, Pill } from '@/components/ui';
 import TalentSearch, { type SearchResult } from '@/components/ai/TalentSearch';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
@@ -157,34 +158,32 @@ const TalentList = ({ slug }: { slug: string }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="mr-auto">
-          <h2 className="font-display text-3xl font-bold">
-            {t('talent-search', 'Talent search')}
-          </h2>
-          <p className="text-sm opacity-70">
-            {`${(list.data?.total ?? 0).toLocaleString()} ${t('talent-visible', "candidates you're allowed to see")} · ${t('talent-modes', 'keyword + semantic + filters')}`}
-          </p>
-        </div>
-        {can('candidates.import') && (
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={() => setShowImport((v) => !v)}
-          >
-            {t('import-csv-short', 'Import CSV')}
-          </button>
-        )}
-        {can('candidates.export') && (
-          <a
-            className={`btn btn-outline ${picked.length ? '' : 'btn-disabled'}`}
-            aria-disabled={!picked.length}
-            href={`/api/teams/${slug}/talent/export?ids=${picked.join(',')}`}
-          >
-            {t('export-selected', 'Export selected')}
-          </a>
-        )}
-      </div>
+      <PageHeader
+        title={t('talent-search', 'Talent search')}
+        subtitle={`${(list.data?.total ?? 0).toLocaleString()} ${t('talent-visible', "candidates you're allowed to see")} · ${t('talent-modes', 'keyword + semantic + filters')}`}
+        actions={
+          <>
+            {can('candidates.import') && (
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowImport((v) => !v)}
+              >
+                {t('import-csv-short', 'Import CSV')}
+              </button>
+            )}
+            {can('candidates.export') && (
+              <a
+                className={`btn btn-outline ${picked.length ? '' : 'btn-disabled'}`}
+                aria-disabled={!picked.length}
+                href={`/api/teams/${slug}/talent/export?ids=${picked.join(',')}`}
+              >
+                {t('export-selected', 'Export selected')}
+              </a>
+            )}
+          </>
+        }
+      />
 
       {can('candidates.search') && (
         <TalentSearch
@@ -198,7 +197,7 @@ const TalentList = ({ slug }: { slug: string }) => {
       )}
 
       {showImport && can('candidates.import') && (
-        <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+        <Panel className="space-y-2">
           <h3 className="font-display font-semibold">
             {t('import-csv', 'Import candidates (CSV)')}
           </h3>
@@ -234,12 +233,12 @@ const TalentList = ({ slug }: { slug: string }) => {
           >
             {t('import', 'Import')}
           </button>
-        </section>
+        </Panel>
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
         <aside className="space-y-4">
-          <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+          <Panel className="space-y-2">
             <h3 className="font-display font-semibold">
               {t('talent-pools', 'Talent pools')}
             </h3>
@@ -291,7 +290,7 @@ const TalentList = ({ slug }: { slug: string }) => {
                   {`+ ${t('new-pool-btn', 'New pool')}`}
                 </button>
               ))}
-          </section>
+          </Panel>
 
           {dupCount > 0 && (
             <section className="space-y-2 rounded-2xl border border-warning/50 bg-warning/10 p-5">
@@ -350,9 +349,11 @@ const TalentList = ({ slug }: { slug: string }) => {
               )}
               <ul className="space-y-3">
                 {results.map((r) => (
-                  <li
+                  <Panel
+                    as="li"
+                    pad="sm"
+                    className="flex gap-3"
                     key={r.candidateId}
-                    className="flex gap-3 rounded-2xl border bg-base-100 p-4"
                   >
                     {check(r.candidateId, r.name)}
                     <div className="min-w-0 flex-1 space-y-1">
@@ -374,27 +375,27 @@ const TalentList = ({ slug }: { slug: string }) => {
                       </div>
                       <p className="text-sm">{r.headline}</p>
                       <div className="flex flex-wrap gap-2 text-xs">
-                        <span className="rounded-full bg-success/15 px-2.5 py-1 font-semibold text-success">
+                        <Pill tone="success" className="font-semibold">
                           {`${t('relevance', 'Relevance')} ${r.scores?.relevance ?? Math.round(r.score * 1000) / 10}`}
-                        </span>
+                        </Pill>
                         {r.scores?.keyword != null && (
-                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                          <Pill>
                             {`${t('keyword', 'Keyword')} ${r.scores.keyword}`}
-                          </span>
+                          </Pill>
                         )}
                         {r.scores?.semantic != null && (
-                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                          <Pill>
                             {`${t('semantic', 'Semantic')} ${r.scores.semantic}`}
-                          </span>
+                          </Pill>
                         )}
                         {ago(r.lastActiveAt) && (
-                          <span className="rounded-full bg-base-200 px-2.5 py-1">
+                          <Pill>
                             {`${t('last-active', 'Last active')} ${ago(r.lastActiveAt)}`}
-                          </span>
+                          </Pill>
                         )}
                       </div>
                     </div>
-                  </li>
+                  </Panel>
                 ))}
               </ul>
             </>
@@ -404,10 +405,7 @@ const TalentList = ({ slug }: { slug: string }) => {
               {list.isError && <Error message={list.isError.message} />}
               <ul className="space-y-3">
                 {(list.data?.candidates ?? []).map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex gap-3 rounded-2xl border bg-base-100 p-4"
-                  >
+                  <Panel as="li" pad="sm" className="flex gap-3" key={c.id}>
                     {check(c.id, c.name)}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap justify-between gap-2">
@@ -427,17 +425,12 @@ const TalentList = ({ slug }: { slug: string }) => {
                       {c.tags.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
                           {c.tags.map((x) => (
-                            <span
-                              key={x.id}
-                              className="rounded-full bg-base-200 px-2.5 py-1"
-                            >
-                              {x.name}
-                            </span>
+                            <Pill key={x.id}>{x.name}</Pill>
                           ))}
                         </div>
                       )}
                     </div>
-                  </li>
+                  </Panel>
                 ))}
               </ul>
               {list.data?.candidates.length === 0 && (
@@ -451,7 +444,7 @@ const TalentList = ({ slug }: { slug: string }) => {
       </div>
 
       {dups && (
-        <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+        <Panel className="space-y-2">
           <h3 className="font-display font-semibold">
             {t('possible-duplicates', 'Possible duplicates')}
           </h3>
@@ -484,7 +477,7 @@ const TalentList = ({ slug }: { slug: string }) => {
               ))}
             </div>
           ))}
-        </section>
+        </Panel>
       )}
     </div>
   );

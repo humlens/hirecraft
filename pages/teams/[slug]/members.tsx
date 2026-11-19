@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui';
 import { PendingInvitations } from '@/components/invitation';
 import { Error, Loading } from '@/components/shared';
 import { Members, TeamTab } from '@/components/team';
@@ -30,17 +31,14 @@ const TeamMembers = ({ teamFeatures }) => {
     <>
       <TeamTab activeTab="members" team={team} teamFeatures={teamFeatures} />
       <div className="space-y-6">
-        <div>
-          <h1 className="font-display text-3xl font-semibold">
-            {t('team-and-permissions', 'Team & permissions')}
-          </h1>
-          <p className="text-sm text-base-content/70">
-            {t(
-              'team-and-permissions-sub',
-              'Invite teammates, assign roles and see exactly what each role can do.'
-            )}
-          </p>
-        </div>
+        <PageHeader
+          as="h1"
+          title={t('team-and-permissions', 'Team & permissions')}
+          subtitle={t(
+            'team-and-permissions-sub',
+            'Invite teammates, assign roles and see exactly what each role can do.'
+          )}
+        />
         <Members team={team} />
         <PendingInvitations team={team} />
         {(can('roles.manage') || can('members.invite')) && (

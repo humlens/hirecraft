@@ -1,3 +1,9 @@
+import {
+  Panel,
+  PageHeader,
+  SegmentedControl,
+  ProgressBar,
+} from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import SettingsNav from '@/components/shared/shell/SettingsNav';
 import { defaultHeaders } from '@/lib/common';
@@ -144,63 +150,41 @@ const PlanOverview = ({ slug }: { slug: string }) => {
   return (
     <div className="space-y-4">
       <SettingsNav slug={slug} />
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="mr-auto">
-          <h2 className="font-display text-3xl font-bold">
-            {t('plan-title', 'Plans & billing')}
-          </h2>
-          <p className="text-sm opacity-70">
-            {[
-              data.label,
-              data.subscription &&
-                t('plan-renews', 'renews {{date}}', {
-                  date: new Date(
-                    data.subscription.renewsAt
-                  ).toLocaleDateString(),
-                }),
-              data.subscription?.cancelAt &&
-                t('plan-cancels', 'cancels on {{date}}', {
-                  date: new Date(
-                    data.subscription.cancelAt
-                  ).toLocaleDateString(),
-                }),
-              data.lifecycle.inGrace || data.lifecycle.readOnly
-                ? t('payment-failed', 'payment failed')
-                : data.subscription
-                  ? t('payment-active', 'payment active')
-                  : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        </div>
-        <div
-          role="group"
-          aria-label={t('billing-interval', 'Billing interval')}
-          className="flex rounded-xl bg-base-300/50 p-1 text-sm"
-        >
-          {(
-            [
-              ['month', t('monthly', 'Monthly')],
-              ['year', t('annual-save', 'Annual · save 2 months')],
-            ] as const
-          ).map(([k, l]) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={interval === k}
-              onClick={() => setInterval(k)}
-              className={`rounded-lg px-4 py-2 ${
-                interval === k
-                  ? 'bg-base-100 font-semibold shadow'
-                  : 'opacity-70'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title={t('plan-title', 'Plans & billing')}
+        subtitle={[
+          data.label,
+          data.subscription &&
+            t('plan-renews', 'renews {{date}}', {
+              date: new Date(data.subscription.renewsAt).toLocaleDateString(),
+            }),
+          data.subscription?.cancelAt &&
+            t('plan-cancels', 'cancels on {{date}}', {
+              date: new Date(data.subscription.cancelAt).toLocaleDateString(),
+            }),
+          data.lifecycle.inGrace || data.lifecycle.readOnly
+            ? t('payment-failed', 'payment failed')
+            : data.subscription
+              ? t('payment-active', 'payment active')
+              : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        actions={
+          <SegmentedControl
+            label={t('billing-interval', 'Billing interval')}
+            value={interval}
+            onChange={setInterval}
+            options={[
+              { value: 'month', label: t('monthly', 'Monthly') },
+              {
+                value: 'year',
+                label: t('annual-save', 'Annual · save 2 months'),
+              },
+            ]}
+          />
+        }
+      />
 
       {data.lifecycle.inGrace && (
         <div role="alert" className="alert alert-warning text-sm">
@@ -239,9 +223,12 @@ const PlanOverview = ({ slug }: { slug: string }) => {
           const price = priceFor(p.key);
 
           return (
-            <article
+            <Panel
               key={p.key}
-              className={`flex flex-col gap-3 rounded-2xl border bg-base-100 p-6 ${current ? 'border-2 border-primary' : ''}`}
+              as="article"
+              pad="lg"
+              selected={current}
+              className="flex flex-col gap-3"
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-display text-lg font-semibold">
@@ -302,7 +289,7 @@ const PlanOverview = ({ slug }: { slug: string }) => {
                   {t('downgrade', 'Downgrade')}
                 </button>
               )}
-            </article>
+            </Panel>
           );
         })}
       </div>
@@ -359,32 +346,27 @@ const PlanOverview = ({ slug }: { slug: string }) => {
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+        <Panel pad="lg" className="space-y-3">
           <h3 className="font-display text-lg font-semibold">
             {t('plan-usage', 'Usage & limits')}
           </h3>
           {keys.map((k) => {
             const limit = data.limits[k];
             const used = data.usage[k] ?? 0;
-            const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
 
-            return (
-              <div key={k} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>{data.limitLabels[k]}</span>
-                  <strong>
-                    {used.toLocaleString()} / {show(limit)}
-                  </strong>
-                </div>
-                {limit !== null && (
-                  <progress
-                    className={`progress w-full ${pct >= 80 ? 'progress-warning' : 'progress-primary'}`}
-                    value={pct}
-                    max={100}
-                    aria-label={data.limitLabels[k]}
-                  />
-                )}
+            return limit === null ? (
+              <div key={k} className="flex justify-between text-sm">
+                <span>{data.limitLabels[k]}</span>
+                <strong>{`${used.toLocaleString()} / ${show(limit)}`}</strong>
               </div>
+            ) : (
+              <ProgressBar
+                key={k}
+                label={data.limitLabels[k]}
+                value={used}
+                max={limit}
+                valueLabel={`${used.toLocaleString()} / ${show(limit)}`}
+              />
             );
           })}
           <p className="text-xs opacity-60">
@@ -393,9 +375,9 @@ const PlanOverview = ({ slug }: { slug: string }) => {
               'Limits are enforced on the server: publishing over the limit is blocked with an upgrade prompt.'
             )}
           </p>
-        </section>
+        </Panel>
 
-        <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+        <Panel pad="lg" className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-display text-lg font-semibold">
               {t('billing-history', 'Billing history')}
@@ -467,7 +449,7 @@ const PlanOverview = ({ slug }: { slug: string }) => {
               {t('cancel-subscription', 'Cancel subscription')}
             </button>
           </p>
-        </section>
+        </Panel>
       </div>
     </div>
   );

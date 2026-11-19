@@ -1,3 +1,4 @@
+import { Switch } from '@/components/ui';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import toast from 'react-hot-toast';
@@ -34,9 +35,9 @@ const AiConsent = () => {
       </p>
       {list.data.map((r) => (
         <label key={r.teamId} className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm"
+          <Switch
+            size="sm"
+            label={r.portal}
             checked={r.granted}
             onChange={(e) => set(r.teamId, e.target.checked)}
           />

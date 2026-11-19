@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import { Card, InputWithLabel } from '@/components/shared';
 import { defaultHeaders } from '@/lib/common';
 import { slugify, slugifyInput } from '@/lib/slug';
@@ -324,7 +325,7 @@ const OnboardingWizard = () => {
           <span className="text-xs font-bold uppercase tracking-wide text-base-content/60">
             {t('portal-preview', 'Live preview')}
           </span>
-          <div className="overflow-hidden rounded-2xl border bg-base-100">
+          <Panel as="div" pad="none" className="overflow-hidden">
             <div
               className="space-y-3 p-5 text-white"
               style={{ background: form.primaryColor }}
@@ -361,7 +362,7 @@ const OnboardingWizard = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </Panel>
         </aside>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { Panel, PageHeader } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import SettingsNav from '@/components/shared/shell/SettingsNav';
 import useApi, { send } from 'hooks/useApi';
@@ -112,7 +113,7 @@ const DomainCard = ({ slug, enabled }: { slug: string; enabled: boolean }) => {
   };
 
   return (
-    <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+    <Panel pad="lg" className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-display text-lg font-semibold">
           {t('domain-title', 'Custom domain')}
@@ -205,7 +206,7 @@ const DomainCard = ({ slug, enabled }: { slug: string; enabled: boolean }) => {
           </div>
         </div>
       )}
-    </section>
+    </Panel>
   );
 };
 
@@ -266,17 +267,13 @@ const Integrations = ({
   return (
     <div className="space-y-4">
       <SettingsNav slug={slug} />
-      <div>
-        <h2 className="font-display text-3xl font-bold">
-          {t('int-title', 'Integrations, webhooks & domain')}
-        </h2>
-        <p className="text-sm opacity-70">
-          {t(
-            'int-note',
-            'Connected through official APIs and OAuth only. Nothing is scraped.'
-          )}
-        </p>
-      </div>
+      <PageHeader
+        title={t('int-title', 'Integrations, webhooks & domain')}
+        subtitle={t(
+          'int-note',
+          'Connected through official APIs and OAuth only. Nothing is scraped.'
+        )}
+      />
 
       {router.query.connected && (
         <div role="status" className="alert alert-success text-sm">
@@ -284,7 +281,7 @@ const Integrations = ({
         </div>
       )}
 
-      <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+      <Panel pad="lg" className="space-y-3">
         <h3 className="font-display text-lg font-semibold">
           {t('int-apps', 'Apps')}
         </h3>
@@ -379,12 +376,12 @@ const Integrations = ({
             </article>
           ))}
         </div>
-      </section>
+      </Panel>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <DomainCard slug={slug} enabled />
 
-        <section className="space-y-4 rounded-2xl border bg-base-100 p-6">
+        <Panel pad="lg" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">
               {t('int-webhooks', 'Webhooks')}
@@ -451,7 +448,7 @@ const Integrations = ({
               </p>
             )}
           </div>
-        </section>
+        </Panel>
       </div>
     </div>
   );

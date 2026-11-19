@@ -1,3 +1,4 @@
+import { Panel, PageHeader, StatTile } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import useApi from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -73,17 +74,10 @@ const Analytics = ({ slug }: { slug: string }) => {
 
   const k = data.kpis;
   const big = (label: string, value: string, hint: string) => (
-    <div className="rounded-2xl border bg-base-100 p-5" key={label}>
-      <div className="text-sm opacity-70">{label}</div>
-      <div className="font-display text-4xl font-bold">{value}</div>
-      <div className="text-sm opacity-70">{hint}</div>
-    </div>
+    <StatTile key={label} large label={label} value={value} hint={hint} />
   );
   const small = (label: string, value: string | number) => (
-    <div className="rounded-xl border bg-base-100 px-4 py-2" key={label}>
-      <div className="text-xs opacity-60">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
-    </div>
+    <StatTile key={label} label={label} value={value} />
   );
   // Stage conversion: each step as a share of the one before it
   const steps = data.funnel
@@ -109,63 +103,61 @@ const Analytics = ({ slug }: { slug: string }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="mr-auto">
-          <h2 className="font-display text-3xl font-bold">
-            {t('recruitment-analytics', 'Recruitment analytics')}
-          </h2>
-          <p className="text-sm opacity-70">
-            {t('analytics-scope', 'Scoped to jobs you can view')}
-          </p>
-        </div>
-        <select
-          className="select"
-          aria-label={t('job', 'Job')}
-          value={jobId}
-          onChange={(e) => setJobId(e.target.value)}
-        >
-          <option value="">{t('all-jobs', 'All jobs')}</option>
-          {(jobs ?? []).map((j) => (
-            <option key={j.id} value={j.id}>
-              {j.title}
-            </option>
-          ))}
-        </select>
-        <select
-          className="select"
-          aria-label={t('period', 'Period')}
-          value={days}
-          onChange={(e) => setDays(e.target.value)}
-        >
-          {['7', '30', '90', '365'].map((d) => (
-            <option
-              key={d}
-              value={d}
-            >{`${t('last', 'Last')} ${d} ${t('days', 'days')}`}</option>
-          ))}
-        </select>
-        <select
-          className="select"
-          aria-label={t('recruiter', 'Recruiter')}
-          value={recruiterId}
-          onChange={(e) => setRecruiterId(e.target.value)}
-        >
-          <option value="">{t('all-recruiters', 'All recruiters')}</option>
-          {options.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        {can('candidates.export') && (
-          <a
-            className="btn btn-outline"
-            href={`/api/teams/${slug}/analytics/export?${qs}`}
-          >
-            {t('export-csv', 'Export CSV')}
-          </a>
-        )}
-      </div>
+      <PageHeader
+        title={t('recruitment-analytics', 'Recruitment analytics')}
+        subtitle={t('analytics-scope', 'Scoped to jobs you can view')}
+        actions={
+          <>
+            <select
+              className="select"
+              aria-label={t('job', 'Job')}
+              value={jobId}
+              onChange={(e) => setJobId(e.target.value)}
+            >
+              <option value="">{t('all-jobs', 'All jobs')}</option>
+              {(jobs ?? []).map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.title}
+                </option>
+              ))}
+            </select>
+            <select
+              className="select"
+              aria-label={t('period', 'Period')}
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+            >
+              {['7', '30', '90', '365'].map((d) => (
+                <option
+                  key={d}
+                  value={d}
+                >{`${t('last', 'Last')} ${d} ${t('days', 'days')}`}</option>
+              ))}
+            </select>
+            <select
+              className="select"
+              aria-label={t('recruiter', 'Recruiter')}
+              value={recruiterId}
+              onChange={(e) => setRecruiterId(e.target.value)}
+            >
+              <option value="">{t('all-recruiters', 'All recruiters')}</option>
+              {options.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            {can('candidates.export') && (
+              <a
+                className="btn btn-outline"
+                href={`/api/teams/${slug}/analytics/export?${qs}`}
+              >
+                {t('export-csv', 'Export CSV')}
+              </a>
+            )}
+          </>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {big(
@@ -200,7 +192,7 @@ const Analytics = ({ slug }: { slug: string }) => {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+        <Panel className="space-y-3">
           <h3 className="font-display text-lg font-semibold">
             {t('stage-conversion', 'Stage conversion')}
           </h3>
@@ -221,9 +213,9 @@ const Analytics = ({ slug }: { slug: string }) => {
               {t('no-data', 'No data for this period.')}
             </p>
           )}
-        </section>
+        </Panel>
 
-        <section className="rounded-2xl border bg-base-100 p-5">
+        <Panel>
           <h3 className="font-display text-lg font-semibold">
             {t('sources', 'Source of applications')}
           </h3>
@@ -257,10 +249,10 @@ const Analytics = ({ slug }: { slug: string }) => {
               {t('no-data', 'No data for this period.')}
             </p>
           )}
-        </section>
+        </Panel>
       </div>
 
-      <section className="rounded-2xl border bg-base-100 p-5">
+      <Panel>
         <h3 className="font-display text-lg font-semibold">
           {t('recruiter-workload', 'Recruiter workload')}
         </h3>
@@ -303,7 +295,7 @@ const Analytics = ({ slug }: { slug: string }) => {
             {t('no-recruiters', 'No recruiters are assigned to jobs yet.')}
           </p>
         )}
-      </section>
+      </Panel>
     </div>
   );
 };

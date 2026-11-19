@@ -1,3 +1,4 @@
+import { Panel, RadialScore, Notice } from '@/components/ui';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
 import toast from 'react-hot-toast';
@@ -52,7 +53,7 @@ const MatchPanel = ({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border bg-base-100 p-5">
+    <Panel className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="mr-auto font-display text-lg font-semibold">
           {t('ai-match-assessment', 'AI match assessment')}
@@ -69,16 +70,7 @@ const MatchPanel = ({
       {a && (
         <>
           <div className="flex flex-wrap items-center gap-5">
-            <div
-              className="radial-progress text-primary"
-              style={
-                { '--value': a.score, '--size': '6rem' } as React.CSSProperties
-              }
-              role="img"
-              aria-label={`${a.score}%`}
-            >
-              <span className="text-xl font-bold">{a.score}%</span>
-            </div>
+            <RadialScore value={a.score} />
             <ul className="min-w-56 flex-1 space-y-2 text-sm">
               {a.breakdown.components
                 .filter((c) => c.applicable && c.score != null)
@@ -146,16 +138,16 @@ const MatchPanel = ({
               </ol>
             </div>
           )}
-          <p className="rounded-xl bg-base-200 p-3 text-xs opacity-80">
+          <Notice tone="muted" className="text-xs opacity-80">
             {t(
               'ai-fairness-note',
               'Not used for scoring: age, gender, religion, ethnicity, disability, photo, marital status. Scores never trigger automatic rejection.'
             )}{' '}
             {a.note}
-          </p>
+          </Notice>
         </>
       )}
-    </section>
+    </Panel>
   );
 };
 

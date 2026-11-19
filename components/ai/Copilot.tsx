@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
 import { useTranslation } from 'next-i18next';
@@ -207,7 +208,7 @@ const Copilot = ({ slug }: { slug: string }) => {
         </button>
       </aside>
 
-      <section className="flex min-h-112 min-w-0 flex-1 flex-col rounded-2xl border bg-base-100">
+      <Panel pad="none" className="flex min-h-112 min-w-0 flex-1 flex-col">
         <div className="flex-1 space-y-4 p-4" aria-live="polite">
           {thread.length === 0 && (
             <p className="py-16 text-center text-sm opacity-70">
@@ -272,7 +273,7 @@ const Copilot = ({ slug }: { slug: string }) => {
             {t('send', 'Send')}
           </button>
         </form>
-      </section>
+      </Panel>
     </div>
   );
 };
