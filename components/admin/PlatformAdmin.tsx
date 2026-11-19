@@ -1,3 +1,4 @@
+import { Panel, PageHeader, StatTile } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import { useTranslation } from 'next-i18next';
@@ -124,17 +125,17 @@ const TenantsTab = () => {
             data.stats.paymentIssues ? 'text-error' : '',
           ],
         ].map(([n, label, cls]) => (
-          <div
+          <StatTile
             key={label as string}
-            className="rounded-2xl border bg-base-100 p-5"
-          >
-            <div className="text-sm opacity-70">{label}</div>
-            <div className={`font-display text-4xl font-bold ${cls}`}>{n}</div>
-          </div>
+            large
+            label={label}
+            value={n}
+            tone={cls ? 'error' : undefined}
+          />
         ))}
       </div>
 
-      <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+      <Panel className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-display text-lg font-semibold">
             {t('admin-all-portals', 'All portals')}
@@ -231,9 +232,9 @@ const TenantsTab = () => {
             </tbody>
           </table>
         </div>
-      </section>
+      </Panel>
 
-      <section className="space-y-2 rounded-2xl border bg-base-100 p-5">
+      <Panel className="space-y-2">
         <h3 className="font-display text-lg font-semibold">
           {t('admin-recent-audit', 'Recent platform audit events')}
         </h3>
@@ -262,7 +263,7 @@ const TenantsTab = () => {
             </li>
           )}
         </ul>
-      </section>
+      </Panel>
     </div>
   );
 };
@@ -534,15 +535,13 @@ const PlatformAdmin = () => {
         </div>
       </header>
       <main className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-        <div>
-          <h2 className="font-display text-3xl font-bold">{title}</h2>
-          <p className="text-sm opacity-70">
-            {t(
-              'admin-note',
-              'Every action here is written to the platform audit log.'
-            )}
-          </p>
-        </div>
+        <PageHeader
+          title={title}
+          subtitle={t(
+            'admin-note',
+            'Every action here is written to the platform audit log.'
+          )}
+        />
         {tab === 'tenants' && <TenantsTab />}
         {tab === 'plans' && <PlansTab />}
         {tab === 'ai' && <AiTab />}

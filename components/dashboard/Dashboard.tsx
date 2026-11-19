@@ -1,3 +1,4 @@
+import { Panel, SegmentedControl, StatTile } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import useApi from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -7,6 +8,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import classNames from 'classnames';
+import toast from 'react-hot-toast';
+import { copyToClipboard } from '@/lib/common';
 
 type Data = {
   days: number;
@@ -92,30 +95,45 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
             {greeting(t)}, {session?.user?.name?.split(' ')[0]}
           </h1>
           <p className="text-sm text-base-content/70">{teamName}</p>
-        </div>
-        <div
-          className="flex flex-wrap gap-2"
-          role="group"
-          aria-label={t('dashboard-range', 'Date range')}
-        >
-          {[7, 30, 90].map((d) => (
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-base-content/70">
+              {t('careers-page', 'Careers page')}:
+            </span>
+            <code className="rounded bg-base-200 px-1.5 py-0.5">{`/p/${slug}`}</code>
             <button
-              key={d}
               type="button"
-              aria-pressed={days === d}
-              onClick={() => setDays(d)}
-              className={classNames(
-                'btn btn-sm min-h-10',
-                days === d
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'btn-outline border-base-300'
-              )}
+              className="link"
+              onClick={() => {
+                copyToClipboard(`${window.location.origin}/p/${slug}`);
+                toast.success(t('portal-link-copied', 'Portal link copied.'));
+              }}
             >
-              {d === 7
-                ? t('last-7-days', 'Last 7 days')
-                : t('n-days', '{{n}} days', { n: d })}
+              {t('copy-portal-link', 'Copy link')}
             </button>
-          ))}
+            <a
+              className="link"
+              href={`/p/${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('view-portal', 'View portal')}
+            </a>
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <SegmentedControl
+            variant="pills"
+            label={t('dashboard-range', 'Date range')}
+            value={days}
+            onChange={setDays}
+            options={[7, 30, 90].map((d) => ({
+              value: d,
+              label:
+                d === 7
+                  ? t('last-7-days', 'Last 7 days')
+                  : t('n-days', '{{n}} days', { n: d }),
+            }))}
+          />
           {can('jobs.create') && (
             <Link
               href={`/teams/${slug}/jobs/new`}
@@ -155,26 +173,19 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
                 ],
                 [t('kpi-hires', 'Hires'), data.kpis.hires, null],
               ].map(([label, value, note]) => (
-                <div
+                <StatTile
                   key={label as string}
-                  className="rounded-2xl border bg-base-100 p-4"
-                >
-                  <div className="text-sm text-base-content/70">{label}</div>
-                  <div className="font-display mt-1 text-4xl font-semibold">
-                    {value}
-                  </div>
-                  {note && (
-                    <div className="mt-1 text-sm font-medium text-secondary">
-                      {note}
-                    </div>
-                  )}
-                </div>
+                  large
+                  label={label}
+                  value={value}
+                  hint={note}
+                />
               ))}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="space-y-4 lg:col-span-2">
-                <section className="rounded-2xl border bg-base-100 p-5">
+                <Panel>
                   <div className="mb-3 flex items-center justify-between">
                     <h2 className="text-lg font-semibold">
                       {t('hiring-funnel', 'Hiring funnel')}
@@ -210,9 +221,9 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
                       </li>
                     ))}
                   </ul>
-                </section>
+                </Panel>
 
-                <section className="rounded-2xl border bg-base-100">
+                <Panel pad="none">
                   <div className="flex items-center justify-between p-5 pb-3">
                     <h2 className="text-lg font-semibold">
                       {t('jobs-attention', 'Jobs needing attention')}
@@ -258,12 +269,12 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
                       </li>
                     ))}
                   </ul>
-                </section>
+                </Panel>
               </div>
 
               <div className="space-y-4">
                 {can('ai.use') && (
-                  <section className="space-y-3 rounded-2xl border bg-base-100 p-5">
+                  <Panel className="space-y-3">
                     <h2 className="flex items-center gap-2 text-lg font-semibold text-secondary">
                       <span aria-hidden="true">{'✦'}</span>
                       <span className="text-base-content">
@@ -311,10 +322,10 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
                         {t('ask', 'Ask')}
                       </button>
                     </form>
-                  </section>
+                  </Panel>
                 )}
 
-                <section className="rounded-2xl border bg-base-100 p-5">
+                <Panel>
                   <h2 className="mb-3 text-lg font-semibold">
                     {t('notifications', 'Notifications')}
                   </h2>
@@ -343,7 +354,7 @@ const Dashboard = ({ slug, teamName }: { slug: string; teamName: string }) => {
                       </li>
                     ))}
                   </ul>
-                </section>
+                </Panel>
               </div>
             </div>
           </>

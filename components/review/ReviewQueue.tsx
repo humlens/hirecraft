@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import useApi, { send } from 'hooks/useApi';
 import usePortalAccess from 'hooks/usePortalAccess';
@@ -34,14 +35,6 @@ type Interview = {
   candidate: { name: string };
   job: { title: string };
 };
-
-const initials = (n: string) =>
-  n
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
 /**
  * Mobile-first recruiter review queue: one candidate at a time, with the AI
@@ -135,12 +128,7 @@ const ReviewQueue = ({ slug }: { slug: string }) => {
             aria-label={card.candidate.name}
           >
             <div className="flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 font-bold text-primary"
-                aria-hidden="true"
-              >
-                {initials(card.candidate.name)}
-              </div>
+              <Avatar name={card.candidate.name} />
               <div className="min-w-0 flex-1">
                 <strong className="block truncate text-lg">
                   {card.candidate.name}

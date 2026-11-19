@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/ui';
 import { signOut, useSession } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
@@ -11,12 +12,6 @@ const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const { pathname } = useRouter();
   const { data: notes } = useApi<{ unread: number }>('/api/notifications');
-  const initials = (session?.user?.name ?? session?.user?.email ?? '?')
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('');
 
   const links = [
     { href: '/me', label: t('my-dashboard', 'Dashboard') },
@@ -64,12 +59,11 @@ const CandidateLayout = ({ children }: { children: React.ReactNode }) => {
                 </span>
               )}
             </Link>
-            <span
+            <Avatar
+              size="sm"
+              name={session?.user?.name ?? session?.user?.email ?? '?'}
               title={session?.user?.email ?? ''}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
-            >
-              {initials}
-            </span>
+            />
             <button
               type="button"
               className="link"

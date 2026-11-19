@@ -1,3 +1,4 @@
+import { Panel, PageHeader, Switch, Pill } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import SettingsNav from '@/components/shared/shell/SettingsNav';
 import useApi, { send } from 'hooks/useApi';
@@ -89,7 +90,7 @@ const Stages = ({ slug }: { slug: string }) => {
   );
 
   return (
-    <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+    <Panel pad="lg" className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-lg font-semibold">
           {t('pipeline-stages', 'Pipeline stages')}
@@ -180,7 +181,7 @@ const Stages = ({ slug }: { slug: string }) => {
           'Terminal stages (Hired, Rejected, Withdrawn) stay last. Renames keep history.'
         )}
       </p>
-    </section>
+    </Panel>
   );
 };
 
@@ -346,7 +347,7 @@ const Rules = ({ slug }: { slug: string }) => {
   );
 
   return (
-    <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+    <Panel pad="lg" className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-lg font-semibold">
           {t('automation-rules', 'Automation rules')}
@@ -525,16 +526,13 @@ const Rules = ({ slug }: { slug: string }) => {
                   {s.then}
                 </p>
                 {r.action.type === 'CREATE_MESSAGE_DRAFT' && (
-                  <span className="mt-1 inline-block rounded-full bg-warning/20 px-2.5 py-0.5 text-xs font-semibold text-warning-content">
+                  <Pill tone="warning" className="mt-1 font-semibold">
                     {t('human-approval', 'Human approval before sending')}
-                  </span>
+                  </Pill>
                 )}
               </div>
-              <input
-                type="checkbox"
-                role="switch"
-                className="toggle toggle-primary"
-                aria-label={`${r.enabled ? t('disable', 'Disable') : t('enable', 'Enable')} ${r.name}`}
+              <Switch
+                label={`${r.enabled ? t('disable', 'Disable') : t('enable', 'Enable')} ${r.name}`}
                 checked={r.enabled}
                 onChange={() => toggle(r)}
               />
@@ -561,7 +559,7 @@ const Rules = ({ slug }: { slug: string }) => {
           'Rules can add tags, notify people and prepare message drafts. They never move or reject candidates, and messages always wait for a person to approve them. Every automated action is written to the application’s audit trail.'
         )}
       </p>
-    </section>
+    </Panel>
   );
 };
 
@@ -571,17 +569,13 @@ const PipelineSettings = ({ slug }: { slug: string }) => {
   return (
     <div className="space-y-4">
       <SettingsNav slug={slug} />
-      <div>
-        <h2 className="font-display text-3xl font-bold">
-          {t('pipeline-automation', 'Pipeline & automation')}
-        </h2>
-        <p className="text-sm opacity-70">
-          {t(
-            'pipeline-scope',
-            'Applies to all jobs in this portal unless a job overrides it.'
-          )}
-        </p>
-      </div>
+      <PageHeader
+        title={t('pipeline-automation', 'Pipeline & automation')}
+        subtitle={t(
+          'pipeline-scope',
+          'Applies to all jobs in this portal unless a job overrides it.'
+        )}
+      />
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <Stages slug={slug} />
         <Rules slug={slug} />

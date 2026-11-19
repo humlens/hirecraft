@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import { defaultHeaders } from '@/lib/common';
 import { useMyApplications, type MyApplication } from 'hooks/useCandidate';
@@ -92,7 +93,7 @@ export const ApplicationList = ({ limit }: { limit?: number }) => {
   return (
     <ul className="space-y-4">
       {apps.map((a) => (
-        <li key={a.id} className="space-y-3 rounded-2xl border bg-base-100 p-5">
+        <Panel as="li" className="space-y-3" key={a.id}>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               className="font-display font-semibold hover:underline"
@@ -119,7 +120,7 @@ export const ApplicationList = ({ limit }: { limit?: number }) => {
                 {t('withdraw', 'Withdraw')}
               </button>
             )}
-        </li>
+        </Panel>
       ))}
     </ul>
   );

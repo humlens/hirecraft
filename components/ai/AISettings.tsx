@@ -1,3 +1,10 @@
+import {
+  Panel,
+  PageHeader,
+  Switch,
+  Notice,
+  ProgressBar,
+} from '@/components/ui';
 import { Error, Loading } from '@/components/shared';
 import SettingsNav from '@/components/shared/shell/SettingsNav';
 import useApi, { send } from 'hooks/useApi';
@@ -116,10 +123,6 @@ const AISettings = ({ slug }: { slug: string }) => {
   };
 
   const u = usage.data?.usage;
-  const pct =
-    u && u.creditsLimit
-      ? Math.min(100, (u.creditsUsed / u.creditsLimit) * 100)
-      : 0;
 
   const label = (k: string) => s.features.find((f) => f.key === k)?.label ?? k;
   const TIER_LABELS: [string, string][] = [
@@ -134,19 +137,15 @@ const AISettings = ({ slug }: { slug: string }) => {
   return (
     <div className="space-y-4">
       <SettingsNav slug={slug} />
-      <div>
-        <h2 className="font-display text-3xl font-bold">
-          {t('ai-settings-title', 'AI providers, usage & governance')}
-        </h2>
-        <p className="text-sm opacity-70">
-          {t(
-            'ai-keys-note',
-            'Keys are stored encrypted on the server and never sent to browsers.'
-          )}
-        </p>
-      </div>
+      <PageHeader
+        title={t('ai-settings-title', 'AI providers, usage & governance')}
+        subtitle={t(
+          'ai-keys-note',
+          'Keys are stored encrypted on the server and never sent to browsers.'
+        )}
+      />
 
-      <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+      <Panel pad="lg" className="space-y-3">
         <h3 className="font-display text-lg font-semibold">
           {t('ai-default-provider', 'Default provider')}
         </h3>
@@ -225,10 +224,10 @@ const AISettings = ({ slug }: { slug: string }) => {
                 )}
           </span>
         </div>
-      </section>
+      </Panel>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+        <Panel pad="lg" className="space-y-3">
           <h3 className="font-display text-lg font-semibold">
             {t('ai-features', 'Features & routing')}
           </h3>
@@ -266,11 +265,8 @@ const AISettings = ({ slug }: { slug: string }) => {
                     <td className="font-mono text-xs">{f.prompt}</td>
                     <td className="text-sm opacity-70">{f.roles}</td>
                     <td>
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        className="toggle toggle-primary"
-                        aria-label={f.label}
+                      <Switch
+                        label={f.label}
                         checked={features[f.key] !== false}
                         onChange={(e) =>
                           setFeatures({
@@ -285,30 +281,29 @@ const AISettings = ({ slug }: { slug: string }) => {
               </tbody>
             </table>
           </div>
-        </section>
+        </Panel>
 
         <div className="space-y-4">
-          <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+          <Panel pad="lg" className="space-y-3">
             <h3 className="font-display text-lg font-semibold">
               {t('ai-usage', 'Usage this month')}
             </h3>
             {u && (
               <>
-                <div className="flex justify-between">
-                  <span>{t('ai-credits-label', 'AI credits')}</span>
-                  <strong>
-                    {u.creditsUsed.toLocaleString()}
-                    {u.creditsLimit != null &&
-                      ` / ${u.creditsLimit.toLocaleString()}`}
-                  </strong>
-                </div>
-                {u.creditsLimit != null && (
-                  <progress
-                    className="progress progress-secondary w-full"
-                    value={pct}
-                    max={100}
-                    aria-label={t('ai-usage', 'Usage this month')}
+                {u.creditsLimit != null ? (
+                  <ProgressBar
+                    tone="secondary"
+                    warnAt={false}
+                    label={t('ai-credits-label', 'AI credits')}
+                    value={u.creditsUsed}
+                    max={u.creditsLimit}
+                    valueLabel={`${u.creditsUsed.toLocaleString()} / ${u.creditsLimit.toLocaleString()}`}
                   />
+                ) : (
+                  <div className="flex justify-between">
+                    <span>{t('ai-credits-label', 'AI credits')}</span>
+                    <strong>{u.creditsUsed.toLocaleString()}</strong>
+                  </div>
                 )}
                 <ul className="space-y-1 text-sm">
                   {u.byFeature.map((f) => (
@@ -333,9 +328,9 @@ const AISettings = ({ slug }: { slug: string }) => {
                 </p>
               </>
             )}
-          </section>
+          </Panel>
 
-          <section className="space-y-3 rounded-2xl border bg-base-100 p-6">
+          <Panel pad="lg" className="space-y-3">
             <h3 className="font-display text-lg font-semibold">
               {t('ai-retention', 'Data & retention')}
             </h3>
@@ -360,14 +355,14 @@ const AISettings = ({ slug }: { slug: string }) => {
                 ))}
               </select>
             </label>
-            <p className="rounded-xl bg-secondary/10 p-3 text-sm text-secondary">
+            <Notice>
               {'🔒 '}
               {t(
                 'ai-no-training',
                 'Candidate data is never used to train models. Logs are redacted before they are stored.'
               )}
-            </p>
-          </section>
+            </Notice>
+          </Panel>
         </div>
       </div>
 

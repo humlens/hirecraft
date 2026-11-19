@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/ui';
 import { Card, Error, Loading } from '@/components/shared';
 import { defaultHeaders } from '@/lib/common';
 import { useApplication } from 'hooks/usePipeline';
@@ -125,11 +126,6 @@ const ApplicationDetail = ({
   const idx = activeStages.findIndex((s) => s.id === application.stage.id);
   const nextStage =
     application.stage.kind === 'ACTIVE' ? activeStages[idx + 1] : undefined;
-  const initials = application.candidate.name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join('');
   const canMove = can('applications.manage') && !application.withdrawnAt;
 
   const addNote = async () => {
@@ -160,12 +156,7 @@ const ApplicationDetail = ({
       <Card>
         <Card.Body>
           <div className="flex flex-wrap items-center gap-4">
-            <span
-              aria-hidden
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary"
-            >
-              {initials}
-            </span>
+            <Avatar name={application.candidate.name} size="lg" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-display text-xl font-semibold">

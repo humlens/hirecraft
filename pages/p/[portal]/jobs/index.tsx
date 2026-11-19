@@ -1,3 +1,4 @@
+import { Panel, Notice } from '@/components/ui';
 import JobActions from '@/components/public/JobActions';
 import { formatLocation, formatSalary } from '@/components/public/JobCard';
 import PortalLayout, {
@@ -170,11 +171,11 @@ const JobsPage: NextPageWithLayout<Props> = ({
               const active = selected?.id === j.id;
 
               return (
-                <li
+                <Panel
                   key={j.id}
-                  className={`rounded-2xl border bg-base-100 p-4 ${
-                    active ? 'border-2' : ''
-                  }`}
+                  as="li"
+                  pad="sm"
+                  selected={active}
                   style={active ? { borderColor: color } : undefined}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -207,15 +208,16 @@ const JobsPage: NextPageWithLayout<Props> = ({
                       <span className="badge badge-outline">{salary}</span>
                     )}
                   </div>
-                </li>
+                </Panel>
               );
             })}
           </ul>
 
           {selected && (
-            <section
+            <Panel
+              pad="lg"
+              className="h-fit lg:sticky lg:top-4"
               aria-label={t('job-details', 'Job details')}
-              className="h-fit rounded-2xl border bg-base-100 p-6 lg:sticky lg:top-4"
             >
               <h2 className="font-display text-2xl font-bold">
                 {selected.title}
@@ -239,13 +241,13 @@ const JobsPage: NextPageWithLayout<Props> = ({
                   color={color}
                 />
               </div>
-              <p className="rounded-xl bg-secondary/10 p-3 text-sm text-secondary">
+              <Notice>
                 {'✦ '}
                 {t(
                   'portal-ai-note',
                   'Sign in to see how well your profile matches this role. Matches are advisory and never reject you automatically.'
                 )}
-              </p>
+              </Notice>
               <div
                 className="prose mt-4 max-w-none"
                 dangerouslySetInnerHTML={{
@@ -279,7 +281,7 @@ const JobsPage: NextPageWithLayout<Props> = ({
                   .filter(Boolean)
                   .join(' · ')}
               </p>
-            </section>
+            </Panel>
           )}
         </div>
       )}

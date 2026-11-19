@@ -1,3 +1,4 @@
+import { Panel, Tabs } from '@/components/ui';
 import { useMyProfile, useMySavedJobs } from 'hooks/useCandidate';
 import useApi, { send } from 'hooks/useApi';
 import { useSession } from 'next-auth/react';
@@ -63,30 +64,15 @@ const Dashboard = () => {
         />
       </section>
 
-      <div role="tablist" className="flex gap-2 border-b">
-        {(
-          [
-            ['apps', t('applications', 'Applications')],
-            ['reco', t('ai-recommended', 'Recommended for you')],
-            ['saved', t('saved-jobs', 'Saved jobs')],
-          ] as const
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${
-              tab === k
-                ? 'border-primary font-semibold text-primary'
-                : 'border-transparent opacity-70'
-            }`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: 'apps', label: t('applications', 'Applications') },
+          { value: 'reco', label: t('ai-recommended', 'Recommended for you') },
+          { value: 'saved', label: t('saved-jobs', 'Saved jobs') },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
@@ -101,10 +87,7 @@ const Dashboard = () => {
               ) : (
                 <ul className="space-y-2 text-sm">
                   {saved.map((j) => (
-                    <li
-                      key={j.id}
-                      className="rounded-2xl border bg-base-100 p-4"
-                    >
+                    <Panel as="li" pad="sm" key={j.id}>
                       <Link
                         className="font-display font-semibold hover:underline"
                         href={`/p/${j.portal.slug}/jobs/${j.slug}`}
@@ -117,7 +100,7 @@ const Dashboard = () => {
                           {t('closed', 'Closed')}
                         </span>
                       )}
-                    </li>
+                    </Panel>
                   ))}
                 </ul>
               )}
@@ -131,7 +114,7 @@ const Dashboard = () => {
               </h2>
               <ul className="space-y-2 text-sm">
                 {interviews.map((i) => (
-                  <li key={i.id} className="rounded-2xl border bg-base-100 p-4">
+                  <Panel as="li" pad="sm" key={i.id}>
                     <span className="font-medium">{i.job}</span> - {i.portal}
                     <div>{`${new Date(i.startsAt).toLocaleString()} (${i.durationMin} ${t('minutes-short', 'min')})`}</div>
                     {i.location && <div>{i.location}</div>}
@@ -145,7 +128,7 @@ const Dashboard = () => {
                         {i.meetingUrl}
                       </a>
                     )}
-                  </li>
+                  </Panel>
                 ))}
               </ul>
             </section>
@@ -153,7 +136,7 @@ const Dashboard = () => {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border bg-base-100 p-5">
+          <Panel>
             <div className="flex items-center justify-between">
               <h2 className="font-display font-semibold">
                 {t('notifications', 'Notifications')}
@@ -181,8 +164,8 @@ const Dashboard = () => {
                 ))}
               </ul>
             )}
-          </section>
-          <section className="rounded-2xl border bg-base-100 p-5">
+          </Panel>
+          <Panel>
             <h2 className="font-display font-semibold">
               {t('my-privacy', 'Privacy')}
             </h2>
@@ -200,7 +183,7 @@ const Dashboard = () => {
                 {t('consent-settings', 'Consent settings')}
               </Link>
             </div>
-          </section>
+          </Panel>
         </aside>
       </div>
     </div>
